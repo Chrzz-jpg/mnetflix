@@ -1,0 +1,18 @@
+[
+  {
+    "name": "Administrador",
+    "email": "admin@meteflix.com",
+    "password": "admin123",
+    "isAdmin": true,
+    "createdAt": "2024-01-01T00:00:00.000Z",
+    "isActive": true
+  },
+  {
+    "name": "Cliente Demo",
+    "email": "cliente@meteflix.com",
+    "password": "cliente123",
+    "isAdmin": false,
+    "createdAt": "2024-01-01T00:00:00.000Z",
+    "isActive": true
+  }
+] 

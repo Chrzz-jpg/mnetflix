@@ -1,0 +1,1767 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Meteflix - Meu Site de Streaming</title>
+    
+    <!-- PWA Meta Tags -->
+    <meta name="description" content="Plataforma de streaming pessoal com autenticação e gerenciamento de filmes">
+    <meta name="theme-color" content="#667eea">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Meteflix">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="msapplication-TileColor" content="#667eea">
+    <meta name="msapplication-TileImage" content="/assets/icons/icon-144x144.png">
+    
+    <!-- PWA Icons -->
+    <link rel="icon" type="image/png" sizes="32x32" href="/assets/icons/icon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="/assets/icons/icon-16x16.png">
+    <link rel="apple-touch-icon" href="/assets/icons/icon-192x192.png">
+    <link rel="manifest" href="/manifest.json">
+    
+    <link rel="stylesheet" href="../../assets/css/style.css">
+    
+    <!-- PouchDB -->
+    <script src="https://cdn.jsdelivr.net/npm/pouchdb@8.0.1/dist/pouchdb.min.js"></script>
+    
+    <!-- Configuração remota -->
+    <script src="../../data/remote_config.js"></script>
+    
+    <!-- Configuração de autenticação -->
+    <script src="../../data/auth_config.js"></script>
+    
+    <!-- Interceptor de autenticação -->
+    <script src="../../data/auth_interceptor.js"></script>
+    
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #0f0f0f;
+            color: white;
+        }
+        
+        header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 20px;
+            text-align: center;
+            position: relative;
+        }
+        
+        .user-info {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: rgba(255, 255, 255, 0.1);
+            padding: 10px 15px;
+            border-radius: 25px;
+            backdrop-filter: blur(10px);
+            display: none;
+        }
+        
+        .user-info span {
+            color: white;
+            font-weight: bold;
+        }
+        
+        .logout-btn {
+            background: #dc3545;
+            color: white;
+            border: none;
+            padding: 5px 10px;
+            border-radius: 15px;
+            cursor: pointer;
+            margin-left: 10px;
+            font-size: 12px;
+        }
+        
+        .logout-btn:hover {
+            background: #c82333;
+        }
+        
+        h1 {
+            margin: 0;
+            font-size: 2.5em;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+        }
+        
+        main {
+            padding: 40px 20px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        .movies-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 30px;
+            margin-top: 30px;
+            width: 100%;
+            box-sizing: border-box;
+        }
+        
+        .movie-card {
+            background: #1a1a1a;
+            border-radius: 10px;
+            overflow: hidden;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+        }
+        
+        .movie-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.5);
+        }
+        
+        .movie-poster {
+            width: 100%;
+            height: 300px;
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 3em;
+        }
+        
+        .movie-info {
+            padding: 20px;
+        }
+        
+        .movie-title {
+            font-size: 1.2em;
+            font-weight: bold;
+            margin-bottom: 10px;
+            color: #fff;
+        }
+        
+        .movie-genre {
+            color: #667eea;
+            font-size: 0.9em;
+            margin-bottom: 5px;
+        }
+        
+        .movie-year {
+            color: #888;
+            font-size: 0.8em;
+        }
+        
+        .welcome-section {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+        
+        .welcome-section h2 {
+            font-size: 2em;
+            margin-bottom: 10px;
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        .welcome-section p {
+            font-size: 1.1em;
+            color: #ccc;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+        
+        .add-movie-section {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 30px;
+            border-radius: 15px;
+            margin-bottom: 40px;
+            backdrop-filter: blur(10px);
+        }
+        
+        .add-movie-section h3 {
+            margin-top: 0;
+            color: #667eea;
+        }
+        
+        .form-group {
+            margin-bottom: 15px;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            color: #ccc;
+        }
+        
+        .form-group input {
+            width: 100%;
+            padding: 10px;
+            border: none;
+            border-radius: 5px;
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            box-sizing: border-box;
+        }
+        
+        .form-group input::placeholder {
+            color: #888;
+        }
+        
+        .btn {
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 1em;
+            transition: transform 0.2s ease;
+        }
+        .movie-actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 16px;
+        }
+        .movie-actions .btn {
+            flex: 1 1 50%;
+            min-width: 0;
+        }
+        @media (max-width: 500px) {
+            .movie-actions {
+                flex-direction: column;
+                gap: 8px;
+            }
+        }
+        
+        .message {
+            padding: 15px;
+            border-radius: 5px;
+            margin: 10px 0;
+            display: none;
+        }
+        
+        .success {
+            background: rgba(40, 167, 69, 0.2);
+            color: #28a745;
+            border: 1px solid #28a745;
+        }
+        
+        .error {
+            background: rgba(220, 53, 69, 0.2);
+            color: #dc3545;
+            border: 1px solid #dc3545;
+        }
+        
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #888;
+        }
+        .main-nav {
+  background: #181828;
+  color: #fff;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+.nav-content {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 20px;
+  height: 56px;
+}
+.nav-logo {
+  font-size: 1.3em;
+  font-weight: bold;
+  letter-spacing: 1px;
+}
+.nav-tabs {
+  display: flex;
+  gap: 8px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.nav-tabs li {
+  margin: 0;
+}
+.nav-tabs .tab-btn {
+  background: none;
+  border: none;
+  color: #fff;
+  font-size: 1em;
+  padding: 10px 18px;
+  border-radius: 20px;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+.nav-tabs .tab-btn.active, .nav-tabs .tab-btn:hover {
+  background: linear-gradient(45deg, #667eea, #764ba2);
+  color: #fff;
+}
+.burger {
+  display: none;
+  flex-direction: column;
+  gap: 4px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  margin-left: 12px;
+}
+.burger span {
+  display: block;
+  width: 26px;
+  height: 3px;
+  background: #fff;
+  border-radius: 2px;
+}
+.nav-logout {
+  margin-left: 16px;
+}
+@media (max-width: 800px) {
+  .nav-content {
+    flex-wrap: wrap;
+    height: auto;
+    padding: 0 8px;
+  }
+  .nav-tabs {
+    flex-direction: column;
+    width: 100%;
+    background: #23234a;
+    position: absolute;
+    left: 0;
+    top: 56px;
+    display: none;
+    border-bottom-left-radius: 12px;
+    border-bottom-right-radius: 12px;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.15);
+  }
+  .nav-tabs.open {
+    display: flex;
+  }
+  .burger {
+    display: flex;
+  }
+  .nav-logout {
+    width: 100%;
+    margin: 0;
+    padding: 12px 0 8px 0;
+    text-align: center;
+    background: #23234a;
+    display: none;
+    position: absolute;
+    left: 0;
+    top: calc(56px + 48px * 2);
+    border-bottom-left-radius: 12px;
+    border-bottom-right-radius: 12px;
+  }
+  .nav-logout.open {
+    display: block;
+  }
+}
+@media (max-width: 1400px) {
+  main { max-width: 98vw; }
+}
+@media (max-width: 1100px) {
+  .movies-grid { grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); }
+}
+@media (max-width: 900px) {
+  .movies-grid { grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); }
+  .system-cards { flex-direction: column; gap: 16px; align-items: center; }
+}
+@media (max-width: 700px) {
+  main { padding: 16px 2vw; }
+  .movies-grid { grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 14px; }
+  .movie-poster { height: 180px; }
+  .profile-form-container, .users-section, .system-section { padding: 12px 4vw; min-width: 0; }
+  .sys-card { min-width: 120px !important; padding: 16px 8px !important; }
+}
+@media (max-width: 500px) {
+  .main-nav, .nav-content { height: auto; min-height: 48px; }
+  .nav-logo { font-size: 1em; }
+  .movie-poster { height: 120px; font-size: 2em; }
+  .movie-title { font-size: 1em; }
+  .movie-info { padding: 10px; }
+  .btn, .tab-btn { font-size: 0.95em; padding: 8px 10px; }
+  .profile-form-container, .users-section, .system-section { padding: 8px 2vw; }
+  .sys-card { min-width: 90px !important; padding: 10px 2px !important; }
+  .modal, #editMovieModal > div, #addMovieModal > div, #userModal > div, #trailerModal > div { min-width: 0 !important; width: 98vw !important; max-width: 98vw !important; padding: 10px 2vw !important; }
+  #trailerPlayerContainer { width: 98vw !important; max-width: 98vw !important; }
+  
+  /* Ajustes para tags em mobile */
+  .tag-list { 
+    grid-template-columns: repeat(2, 1fr) !important; 
+    gap: 6px !important; 
+  }
+  .tag { 
+    font-size: 0.8em !important; 
+    padding: 6px 8px !important; 
+    min-height: 28px !important; 
+  }
+  .movie-category-tags .tag {
+    font-size: 0.7em !important;
+    padding: 3px 6px !important;
+  }
+  
+  /* Ajustes para filtro em mobile */
+  #filterSection {
+    padding: 12px !important;
+  }
+  #filterTags {
+    grid-template-columns: repeat(3, 1fr) !important;
+    gap: 4px !important;
+  }
+  #filterTags .tag {
+    font-size: 0.7em !important;
+    padding: 4px 6px !important;
+  }
+  
+  /* Ajustes para modal de edição em mobile */
+  #editMovieModal > div {
+    padding: 16px !important;
+    min-width: 280px !important;
+    max-width: 95vw !important;
+  }
+  #editCategoryTags {
+    grid-template-columns: repeat(3, 1fr) !important;
+    gap: 4px !important;
+  }
+  #editCategoryTags .tag {
+    font-size: 0.7em !important;
+    padding: 4px 6px !important;
+    min-height: 24px !important;
+  }
+}
+@media (max-width: 370px) {
+  .movie-title, .movie-category, .movie-description { font-size: 0.85em; }
+  .btn, .tab-btn { font-size: 0.85em; }
+  
+  /* Ajustes para telas muito pequenas */
+  .tag-list { 
+    grid-template-columns: repeat(1, 1fr) !important; 
+    gap: 4px !important; 
+  }
+  .tag { 
+    font-size: 0.75em !important; 
+    padding: 4px 6px !important; 
+    min-height: 24px !important; 
+  }
+  
+  /* Ajustes para filtro em telas muito pequenas */
+  #filterTags {
+    grid-template-columns: repeat(3, 1fr) !important;
+    gap: 3px !important;
+  }
+  #filterTags .tag {
+    font-size: 0.65em !important;
+    padding: 3px 4px !important;
+  }
+  
+  /* Ajustes para modal de edição em telas muito pequenas */
+  #editCategoryTags {
+    grid-template-columns: repeat(3, 1fr) !important;
+    gap: 3px !important;
+  }
+  #editCategoryTags .tag {
+    font-size: 0.65em !important;
+    padding: 3px 4px !important;
+    min-height: 20px !important;
+  }
+}
+#userRole {
+  border: none;
+  background: #23234a;
+  color: #fff;
+  font-size: 1em;
+  padding: 10px;
+  border-radius: 6px;
+  margin-top: 2px;
+  margin-bottom: 2px;
+  width: 100%;
+  box-sizing: border-box;
+}
+#userRole:focus {
+  outline: 2px solid #667eea;
+  background: #181828;
+}
+.tag-list { 
+  display: grid; 
+  grid-template-columns: repeat(3, 1fr); 
+  gap: 6px; 
+  max-width: 100%;
+  margin-bottom: 8px;
+}
+.tag {
+  padding: 6px 8px;
+  border-radius: 12px;
+  border: 1.5px solid #eee;
+  font-size: 0.8em;
+  cursor: pointer;
+  user-select: none;
+  transition: all 0.3s ease;
+  background: #fff;
+  text-align: center;
+  font-weight: 500;
+  min-height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.tag.selected {
+  background: #23234a;
+  border-color: #667eea;
+  color: #fff;
+  font-weight: bold;
+  box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
+  transform: scale(1.05);
+  position: relative;
+}
+
+.tag.selected::after {
+  content: '✓';
+  position: absolute;
+  top: -2px;
+  right: -2px;
+  background: #667eea;
+  color: white;
+  border-radius: 50%;
+  width: 16px;
+  height: 16px;
+  font-size: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+}
+.tag-acao { color: #dc3545; border-color: #dc3545; }
+.tag-comedia { color: #ffc107; border-color: #ffc107; }
+.tag-drama { color: #6f42c1; border-color: #6f42c1; }
+.tag-terror { color: #000; border-color: #000; }
+.tag-ficcao { color: #17a2b8; border-color: #17a2b8; }
+.tag-animacao { color: #fd7e14; border-color: #fd7e14; }
+.tag-romance { color: #e83e8c; border-color: #e83e8c; }
+.tag-suspense { color: #6c757d; border-color: #6c757d; }
+.tag-documentario { color: #28a745; border-color: #28a745; }
+
+
+/* Estilos para tags nos cards dos filmes */
+.movie-category-tags .tag {
+  background: #23234a !important;
+  color: #fff !important;
+  border: 1px solid #667eea !important;
+  font-size: 0.75em !important;
+  padding: 4px 8px !important;
+  border-radius: 12px !important;
+  font-weight: 500 !important;
+  transition: all 0.2s ease !important;
+}
+
+.movie-category-tags .tag:hover {
+  transform: scale(1.05) !important;
+  box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3) !important;
+}
+
+/* Estilos para tags de filtro */
+#filterTags .tag {
+  background: #23234a !important;
+  color: #fff !important;
+  border: 1px solid #667eea !important;
+  font-size: 0.75em !important;
+  padding: 6px 8px !important;
+  border-radius: 12px !important;
+  font-weight: 500 !important;
+  transition: all 0.2s ease !important;
+  cursor: pointer !important;
+}
+
+#filterTags .tag:hover {
+  transform: scale(1.05) !important;
+  box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3) !important;
+}
+
+#filterTags .tag.selected {
+  background: #667eea !important;
+  border-color: #667eea !important;
+  color: #fff !important;
+  font-weight: bold !important;
+  box-shadow: 0 2px 8px rgba(102, 126, 234, 0.4) !important;
+}
+
+/* Estilos específicos para tags na modal de edição */
+#editCategoryTags .tag {
+  font-size: 0.75em !important;
+  padding: 6px 8px !important;
+  min-height: 28px !important;
+  border-radius: 8px !important;
+}
+
+#editCategoryTags .tag.selected {
+  background: #667eea !important;
+  border-color: #667eea !important;
+  color: #fff !important;
+  font-weight: bold !important;
+  box-shadow: 0 2px 6px rgba(102, 126, 234, 0.3) !important;
+  transform: scale(1.02) !important;
+}
+
+#editCategoryTags .tag.selected::after {
+  width: 12px !important;
+  height: 12px !important;
+  font-size: 8px !important;
+  top: -1px !important;
+  right: -1px !important;
+}
+
+/* Efeitos hover para inputs da modal */
+#editMovieModal input:focus,
+#editMovieModal textarea:focus {
+  outline: none !important;
+  border-color: #667eea !important;
+  box-shadow: 0 0 0 2px rgba(102, 126, 234, 0.2) !important;
+}
+
+#editMovieModal .btn:hover {
+  transform: translateY(-1px) !important;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.3) !important;
+}
+
+#editMovieModal .btn:active {
+  transform: translateY(0) !important;
+}
+    </style>
+</head>
+<body>
+    <header>
+        <h1>🎬 Meteflix</h1>
+        <p>Seu streaming pessoal</p>
+        <div id="welcomeUser" style="margin-top:8px;font-size:1.1em;color:#ccc;text-align:center;"></div>
+    </header>
+    
+    <nav class="main-nav">
+  <div class="nav-content">
+    <div class="nav-logo">🎬 Meteflix</div>
+    <button class="burger" id="burgerBtn" aria-label="Menu"><span></span><span></span><span></span></button>
+    <ul class="nav-tabs" id="navTabs">
+      <!-- Tabs serão inseridas via JS -->
+    </ul>
+    <div class="nav-logout" id="navLogout" style="display:none;">
+      <button class="btn logout-btn" onclick="logout()">🚪 Logout</button>
+    </div>
+  </div>
+</nav>
+    
+    <main>
+        <div id="moviesContainer">
+            <div class="loading">Carregando seus filmes...</div>
+        </div>
+    </main>
+
+    <div id="editMovieModal" style="display:none;position:fixed;top:0;left:0;width:100vw;height:100vh;background:rgba(0,0,0,0.8);z-index:1000;align-items:center;justify-content:center;">
+  <div style="background:#181828;padding:24px;border-radius:16px;min-width:300px;max-width:500px;width:90vw;position:relative;color:white;box-shadow:0 8px 32px rgba(0,0,0,0.5);border:1px solid #23234a;">
+    <button onclick="closeEditModal()" style="position:absolute;top:12px;right:12px;background:none;border:none;font-size:1.8em;color:#fff;cursor:pointer;width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;transition:background 0.2s;">&times;</button>
+    <h3 style="margin:0 0 20px 0;color:#667eea;font-size:1.4em;text-align:center;">✏️ Editar Filme</h3>
+    <form id="editMovieForm" style="display:flex;flex-direction:column;gap:16px;">
+      <input type="hidden" id="editMovieId">
+      
+      <div class="form-group" style="margin:0;">
+        <label for="editMovieTitle" style="display:block;margin-bottom:6px;color:#ccc;font-size:0.9em;font-weight:500;">🎬 Título do Filme</label>
+        <input type="text" id="editMovieTitle" required style="width:100%;padding:10px;border:1px solid #23234a;border-radius:8px;background:#23234a;color:white;font-size:0.95em;box-sizing:border-box;">
+      </div>
+      
+      <div class="form-group" style="margin:0;">
+        <label for="editMovieDescription" style="display:block;margin-bottom:6px;color:#ccc;font-size:0.9em;font-weight:500;">📝 Sinopse</label>
+        <textarea id="editMovieDescription" required style="width:100%;padding:10px;border:1px solid #23234a;border-radius:8px;background:#23234a;color:white;font-size:0.95em;box-sizing:border-box;min-height:80px;resize:vertical;font-family:inherit;"></textarea>
+      </div>
+      
+      <div class="form-group" style="margin:0;">
+        <label for="editMovieTrailer" style="display:block;margin-bottom:6px;color:#ccc;font-size:0.9em;font-weight:500;">🎥 Trailer (URL)</label>
+        <input type="url" id="editMovieTrailer" required style="width:100%;padding:10px;border:1px solid #23234a;border-radius:8px;background:#23234a;color:white;font-size:0.95em;box-sizing:border-box;">
+      </div>
+      
+      <div class="form-group" style="margin:0;">
+        <label style="display:block;margin-bottom:8px;color:#ccc;font-size:0.9em;font-weight:500;">🏷️ Categorias</label>
+        <div id="editCategoryTags" class="tag-list" style="display:grid;grid-template-columns:repeat(3,1fr);gap:4px;margin-bottom:8px;"></div>
+        <input type="hidden" id="editMovieCategory" name="category">
+        <small style="color:#888;font-size:0.8em;">Clique para selecionar múltiplas categorias</small>
+      </div>
+      
+      <div class="form-group" style="margin:0;">
+        <label for="editMovieImage" style="display:block;margin-bottom:6px;color:#ccc;font-size:0.9em;font-weight:500;">🖼️ Imagem (URL)</label>
+        <input type="url" id="editMovieImage" required style="width:100%;padding:10px;border:1px solid #23234a;border-radius:8px;background:#23234a;color:white;font-size:0.95em;box-sizing:border-box;">
+      </div>
+      
+      <div style="display:flex;gap:12px;margin-top:8px;">
+        <button type="button" onclick="closeEditModal()" class="btn" style="flex:1;background:#666;color:white;border:none;padding:12px;border-radius:8px;cursor:pointer;font-size:0.95em;transition:background 0.2s;">❌ Cancelar</button>
+        <button type="submit" class="btn" style="flex:1;background:linear-gradient(45deg,#667eea,#764ba2);color:white;border:none;padding:12px;border-radius:8px;cursor:pointer;font-size:0.95em;font-weight:bold;transition:transform 0.2s;">💾 Salvar</button>
+      </div>
+    </form>
+    <div id="editModalMessage" style="margin-top:16px;padding:8px;border-radius:6px;text-align:center;font-size:0.9em;"></div>
+  </div>
+</div>
+
+<div id="deleteConfirmModal" style="display:none;position:fixed;top:0;left:0;width:100vw;height:100vh;background:rgba(0,0,0,0.7);z-index:1001;align-items:center;justify-content:center;">
+  <div style="background:#222;padding:30px 20px;border-radius:10px;min-width:320px;max-width:90vw;position:relative;text-align:center;">
+    <button onclick="closeDeleteModal()" style="position:absolute;top:10px;right:10px;background:none;border:none;font-size:1.5em;color:#fff;cursor:pointer;">&times;</button>
+    <h3>Confirmar Exclusão</h3>
+    <p id="deleteModalText">Tem certeza que deseja excluir este filme?</p>
+    <div style="margin-top:24px;display:flex;gap:16px;justify-content:center;">
+      <button class="btn" style="background:#888;" onclick="closeDeleteModal()">Cancelar</button>
+      <button class="btn" id="confirmDeleteBtn" style="background:#dc3545;">Excluir</button>
+    </div>
+  </div>
+</div>
+
+<div id="addMovieModal" style="display:none;position:fixed;top:0;left:0;width:100vw;height:100vh;background:rgba(0,0,0,0.7);z-index:2000;align-items:center;justify-content:center;">
+  <div style="background:#222;padding:30px 20px;border-radius:10px;min-width:320px;max-width:90vw;position:relative;">
+    <button onclick="closeAddMovieModal()" style="position:absolute;top:10px;right:10px;background:none;border:none;font-size:1.5em;color:#fff;cursor:pointer;">&times;</button>
+    <h3>➕ Adicionar Novo Filme</h3>
+    <form id="addMovieModalForm">
+      <div class="form-group"><label for="addMovieTitle">Título do Filme:</label><input type="text" id="addMovieTitle" placeholder="Ex: Vingadores: Ultimato" required></div>
+      <div class="form-group"><label for="addMovieDescription">Sinopse:</label><input type="text" id="addMovieDescription" placeholder="Ex: Sinopse do filme" required></div>
+      <div class="form-group"><label for="addMovieTrailer">Trailer (URL):</label><input type="url" id="addMovieTrailer" placeholder="Ex: https://youtube.com/..." required></div>
+      <div class="form-group">
+        <label for="addMovieCategory">Categorias:</label>
+        <div id="categoryTags" class="tag-list" style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:8px;"></div>
+        <input type="hidden" id="addMovieCategory" name="category">
+        <small style="color:#aaa;font-size:0.9em;">Clique para selecionar. Pode escolher várias categorias.</small>
+      </div>
+      <div class="form-group"><label for="addMovieImage">Imagem (URL da Thumb):</label><input type="url" id="addMovieImage" placeholder="Ex: https://.../thumb.jpg" required></div>
+      <button type="submit" class="btn" style="width:100%;margin-top:18px;">🎬 Adicionar Filme</button>
+    </form>
+    <div id="addMovieModalMsg" style="margin-top:16px;"></div>
+  </div>
+</div>
+
+<div id="trailerModal" style="display:none;position:fixed;top:0;left:0;width:100vw;height:100vh;background:rgba(0,0,0,0.85);z-index:3000;align-items:center;justify-content:center;">
+  <div style="background:#181828;padding:0;border-radius:12px;min-width:320px;max-width:95vw;max-height:90vh;position:relative;display:flex;flex-direction:column;align-items:center;">
+    <button onclick="closeTrailerModal()" style="position:absolute;top:10px;right:10px;background:none;border:none;font-size:2em;color:#fff;cursor:pointer;z-index:2;">&times;</button>
+    <div id="trailerPlayerContainer" style="width:80vw;max-width:640px;max-height:70vh;aspect-ratio:16/9;display:flex;align-items:center;justify-content:center;"></div>
+  </div>
+</div>
+
+<div id="deleteUserModal" style="display:none;position:fixed;top:0;left:0;width:100vw;height:100vh;background:rgba(0,0,0,0.7);z-index:2000;align-items:center;justify-content:center;">
+  <div style="background:#222;padding:30px 20px;border-radius:10px;min-width:320px;max-width:90vw;position:relative;text-align:center;">
+    <button onclick="closeDeleteUserModal()" style="position:absolute;top:10px;right:10px;background:none;border:none;font-size:1.5em;color:#fff;cursor:pointer;">&times;</button>
+    <h3>Confirmar Exclusão</h3>
+    <p id="deleteUserModalText">Tem certeza que deseja excluir este usuário?</p>
+    <div style="margin-top:24px;display:flex;gap:16px;justify-content:center;">
+      <button class="btn" style="background:#888;" onclick="closeDeleteUserModal()">Cancelar</button>
+      <button class="btn" id="confirmDeleteUserBtn" style="background:#dc3545;">Excluir</button>
+    </div>
+  </div>
+</div>
+
+<div id="userModal" style="display:none;position:fixed;top:0;left:0;width:100vw;height:100vh;background:rgba(0,0,0,0.7);z-index:2000;align-items:center;justify-content:center;">
+  <div style="background:#222;padding:30px 20px;border-radius:10px;min-width:320px;max-width:90vw;position:relative;">
+    <button onclick="closeUserModal()" style="position:absolute;top:10px;right:10px;background:none;border:none;font-size:1.5em;color:#fff;cursor:pointer;">&times;</button>
+    <h3 id="userModalTitle">Novo Usuário</h3>
+    <form id="userForm">
+      <input type="hidden" id="userId">
+      <div class="form-group"><label for="userName">Nome:</label><input type="text" id="userName" required></div>
+      <div class="form-group"><label for="userEmail">Email:</label><input type="email" id="userEmail" required></div>
+      <div class="form-group"><label for="userPassword">Senha:</label><input type="password" id="userPassword" placeholder="Preencha para criar ou alterar"></div>
+      <div class="form-group">
+        <label for="userRole">Tipo de Usuário:</label>
+        <select id="userRole" style="width:100%;padding:10px;border-radius:6px;background:#23234a;color:#fff;font-size:1em;">
+          <option value="false">👤 Cliente &mdash; acesso apenas a filmes</option>
+          <option value="true">🛡️ Admin &mdash; gerencia filmes, usuários e sistema</option>
+        </select>
+      </div>
+      <button type="submit" class="btn" style="width:100%;margin-top:18px;">Salvar</button>
+      <div id="userModalMsg" style="margin-top:16px;"></div>
+    </form>
+  </div>
+</div>
+
+<div id="movieDetailModal" style="display:none;position:fixed;top:0;left:0;width:100vw;height:100vh;background:rgba(10,10,20,0.98);z-index:4000;align-items:center;justify-content:center;overflow:auto;">
+  <div style="background:#181828;padding:0;border-radius:16px;min-width:320px;max-width:98vw;max-height:98vh;position:relative;box-shadow:0 8px 32px #000b;display:flex;flex-direction:column;align-items:center;">
+    <button onclick="closeMovieDetailModal()" style="position:absolute;top:10px;right:10px;background:none;border:none;font-size:2em;color:#fff;cursor:pointer;z-index:2;">&times;</button>
+    <div id="movieDetailContent" style="width:90vw;max-width:700px;padding:32px 16px 24px 16px;display:flex;flex-direction:column;align-items:center;">
+      <!-- Conteúdo dinâmico do filme aqui -->
+    </div>
+  </div>
+</div>
+
+    <script>
+        // Variáveis globais para o sistema de filtro
+        window.allMovies = [];
+        window.selectedFilters = [];
+        
+        // Mostrar informações do usuário logado
+        function showUserInfo() {
+            if (typeof authManager !== 'undefined' && authManager.isLoggedIn()) {
+                const user = authManager.getCurrentUser();
+                const welcomeMessage = document.getElementById('welcomeUser');
+                
+                if (user.isAdmin) {
+                    welcomeMessage.textContent = `Bem-vindo, ${user.name}!`;
+                } else {
+                    welcomeMessage.textContent = `Bem-vindo, ${user.name}!`;
+                }
+            }
+        }
+        
+        // Função de logout
+        function logout() {
+            console.log('Logout chamado'); // log temporário para depuração
+            if (typeof authManager !== 'undefined') {
+                authManager.logout();
+                showMessage('Logout realizado com sucesso!', 'success');
+                setTimeout(() => {
+                    window.location.href = '/pages/login/';
+                }, 1500);
+            }
+        }
+        window.logout = logout;
+        
+        // Carregar filmes
+        async function loadMovies() {
+            const container = document.getElementById('moviesContainer');
+            
+            try {
+                if (typeof authManager === 'undefined') {
+                    container.innerHTML = '<div class="loading">Sistema de autenticação não disponível</div>';
+                    return;
+                }
+                
+                const user = authManager.getCurrentUser();
+                let result;
+                
+                // Se for admin, mostrar todos os filmes, senão mostrar apenas os próprios
+                if (user.isAdmin) {
+                    result = await authManager.getAllMovies();
+                } else {
+                    result = await authManager.getMyMovies();
+                }
+                
+                if (result.success) {
+                    // Armazenar filmes para o sistema de filtro
+                    if (!window.allMovies) window.allMovies = [];
+                    window.allMovies = result.movies;
+                    
+                    if (result.movies.length === 0) {
+                        container.innerHTML = `
+                            <div class="loading">
+                                <p>Nenhum filme encontrado.</p>
+                                ${user.isAdmin ? '<p>Adicione filmes usando o formulário acima ou o painel administrativo!</p>' : ''}
+                            </div>
+                        `;
+                    } else {
+                        let moviesHtml = '<div class="movies-grid">';
+                        result.movies.forEach(movie => {
+                            // Para admin, card não tem onclick; para cliente, card abre detalhes
+                            const cardOnClick = user.isAdmin ? '' : `onclick='openMovieDetailModal(${JSON.stringify(movie)})'`;
+                            
+                            // Renderizar tags de categoria para o card
+                            let categoryTagsHtml = '';
+                            if (movie.category) {
+                                const categories = movie.category.split(',').map(c => c.trim());
+                                categoryTagsHtml = '<div class="movie-category-tags" style="display:flex;flex-wrap:wrap;gap:4px;margin:8px 0;">';
+                                categories.forEach(category => {
+                                    const cleanCategory = category.toLowerCase();
+                                    categoryTagsHtml += `<span class="tag tag-${cleanCategory}" style="padding:4px 8px;font-size:0.75em;border-radius:12px;background:#23234a;color:#fff;border:1px solid #667eea;">${category.charAt(0).toUpperCase() + category.slice(1)}</span>`;
+                                });
+                                categoryTagsHtml += '</div>';
+                            }
+                            
+                            moviesHtml += `
+                                <div class="movie-card" style="cursor:pointer;" ${cardOnClick}>
+                                    <div class="movie-poster">${(movie.image || movie.thumb) ? `<img src="${movie.image || movie.thumb}" alt="Thumb" style="width:100%;height:100%;object-fit:cover;">` : '🎬'}</div>
+                                    <div class="movie-info">
+                                        <div class="movie-title">${movie.title}</div>
+                                        ${categoryTagsHtml}
+                                        <div class="movie-description">${movie.description || ''}</div>
+                                        ${movie.trailer ? `<div style='margin-top:8px;'><button class="btn btn-detail" style="width:100%;background:#23234a;color:#67e;font-size:1em;" data-movie='${encodeURIComponent(JSON.stringify(movie))}'>ℹ️ Detalhes</button></div>` : ''}
+                                        ${user.isAdmin ? `
+                                            <div class="movie-actions">
+                                                <button class="btn btn-edit" data-id="${movie._id}">✏️ Editar</button>
+                                                <button class="btn btn-delete" data-id="${movie._id}">🗑️ Excluir</button>
+                                            </div>
+                                        ` : ''}
+                                    </div>
+                                </div>
+                            `;
+                        });
+                        moviesHtml += '</div>';
+                        container.innerHTML = moviesHtml;
+                    }
+                } else {
+                    container.innerHTML = `<div class="error">Erro ao carregar filmes: ${result.error}</div>`;
+                }
+                if (user.isAdmin) {
+                    document.querySelectorAll('.btn-edit').forEach(btn => {
+                        btn.onclick = function(e) {
+                            e.stopPropagation();
+                            const movieId = btn.getAttribute('data-id');
+                            console.log('Botão editar clicado para ID:', movieId); // Log para depuração
+                            const movie = result.movies.find(m => m._id === movieId);
+                            console.log('Filme encontrado:', movie); // Log para depuração
+                            if (movie) {
+                                openEditModal(movie);
+                            } else {
+                                console.error('Filme não encontrado para ID:', movieId);
+                            }
+                        };
+                    });
+                    document.querySelectorAll('.btn-delete').forEach(btn => {
+                        btn.onclick = function(e) {
+                            e.stopPropagation();
+                            const id = btn.getAttribute('data-id');
+                            const movie = result.movies.find(m => m._id === id);
+                            openDeleteModal(id, movie.title);
+                        };
+                    });
+                }
+                document.querySelectorAll('.btn-trailer').forEach(btn => {
+                    btn.onclick = function() {
+                        const url = decodeURIComponent(btn.getAttribute('data-trailer'));
+                        openTrailerModal(url);
+                    };
+                });
+                // Corrigir botão de detalhes para abrir modal corretamente
+                document.querySelectorAll('.btn-detail').forEach(btn => {
+                    btn.onclick = function(e) {
+                        e.stopPropagation();
+                        const movie = JSON.parse(decodeURIComponent(btn.getAttribute('data-movie')));
+                        openMovieDetailModal(movie);
+                    };
+                });
+            } catch (error) {
+                container.innerHTML = `<div class="error">Erro: ${error.message}</div>`;
+            }
+        }
+        
+        // Adicionar filme
+        async function addMovie(event) {
+            event.preventDefault();
+            
+            const title = document.getElementById('addMovieTitle').value;
+            const description = document.getElementById('addMovieDescription').value;
+            const trailer = document.getElementById('addMovieTrailer').value;
+            const category = document.getElementById('addMovieCategory').value;
+            const image = document.getElementById('addMovieImage').value;
+            
+            if (!title || !description || !trailer || !category || !image) {
+                showMessage('Preencha todos os campos!', 'error');
+                return;
+            }
+            
+            try {
+                const movie = {
+                    title: title,
+                    description: description,
+                    trailer: trailer,
+                    category: category,
+                    image: image
+                };
+                
+                const result = await authManager.adicionarFilme(movie);
+                
+                if (result.success) {
+                    showMessage('Filme adicionado com sucesso!', 'success');
+                    document.getElementById('addMovieForm').reset();
+                    loadMovies(); // Recarregar lista
+                } else {
+                    showMessage(`Erro ao adicionar filme: ${result.error}`, 'error');
+                }
+            } catch (error) {
+                showMessage(`Erro: ${error.message}`, 'error');
+            }
+        }
+        
+        // Mostrar mensagem
+        function showMessage(message, type = 'info') {
+            const messageDiv = document.getElementById('message');
+            messageDiv.className = `message ${type}`;
+            messageDiv.textContent = message;
+            messageDiv.style.display = 'block';
+            
+            setTimeout(() => {
+                messageDiv.style.display = 'none';
+            }, 5000);
+        }
+        
+        // Inicializar página
+        function showWelcomeUser() {
+            if (typeof authManager !== 'undefined' && authManager.isLoggedIn()) {
+                const user = authManager.getCurrentUser();
+                document.getElementById('welcomeUser').textContent = `Bem-vindo, ${user.name}!`;
+            } else {
+                document.getElementById('welcomeUser').textContent = '';
+            }
+        }
+        window.addEventListener('load', () => {
+            setTimeout(() => {
+                showUserInfo();
+                loadMovies();
+                
+                // Adicionar evento ao formulário
+                const form = document.getElementById('addMovieForm');
+                if (form) {
+                    form.addEventListener('submit', addMovie);
+                }
+            }, 500);
+        });
+        document.addEventListener('DOMContentLoaded', showWelcomeUser);
+
+        function openEditModal(movie) {
+            console.log('Abrindo modal de edição para:', movie); // Log para depuração
+            
+            // Limpar mensagens anteriores
+            document.getElementById('editModalMessage').textContent = '';
+            document.getElementById('editModalMessage').style.background = '';
+            document.getElementById('editModalMessage').style.color = '';
+            
+            // Preencher campos
+            document.getElementById('editMovieId').value = movie._id;
+            document.getElementById('editMovieTitle').value = movie.title;
+            document.getElementById('editMovieDescription').value = movie.description;
+            document.getElementById('editMovieTrailer').value = movie.trailer;
+            document.getElementById('editMovieImage').value = movie.image || movie.thumb || '';
+            
+            // Lidar com múltiplas categorias
+            let selected = [];
+            if (movie.category) selected = movie.category.split(',').map(c => c.trim());
+            renderCategoryTags('editCategoryTags', 'editMovieCategory', selected);
+            
+            // Exibir modal
+            const modal = document.getElementById('editMovieModal');
+            modal.style.display = 'flex';
+            
+            // Focar no primeiro campo
+            setTimeout(() => {
+                document.getElementById('editMovieTitle').focus();
+            }, 100);
+            
+            console.log('Modal de edição exibido:', modal.style.display); // Log para depuração
+        }
+        function closeEditModal() {
+            document.getElementById('editMovieModal').style.display = 'none';
+        }
+        document.getElementById('editMovieForm').onsubmit = async function(event) {
+            event.preventDefault();
+            
+            const messageDiv = document.getElementById('editModalMessage');
+            const submitBtn = event.target.querySelector('button[type="submit"]');
+            const originalText = submitBtn.textContent;
+            
+            // Mostrar loading
+            submitBtn.textContent = '⏳ Salvando...';
+            submitBtn.disabled = true;
+            messageDiv.textContent = '';
+            messageDiv.style.background = '';
+            messageDiv.style.color = '';
+            
+            try {
+                const id = document.getElementById('editMovieId').value;
+                const title = document.getElementById('editMovieTitle').value;
+                const description = document.getElementById('editMovieDescription').value;
+                const trailer = document.getElementById('editMovieTrailer').value;
+                const category = document.getElementById('editMovieCategory').value;
+                const image = document.getElementById('editMovieImage').value;
+                
+                const result = await authManager.updateMovie({ _id: id, title, description, trailer, category, image });
+                
+                if (result.success) {
+                    messageDiv.textContent = '✅ Filme atualizado com sucesso!';
+                    messageDiv.style.background = 'rgba(40, 167, 69, 0.2)';
+                    messageDiv.style.color = '#28a745';
+                    messageDiv.style.border = '1px solid #28a745';
+                    
+                    // Fechar modal após 1.5 segundos
+                    setTimeout(() => {
+                        closeEditModal();
+                        loadMovies();
+                    }, 1500);
+                } else {
+                    messageDiv.textContent = '❌ Erro ao atualizar: ' + result.error;
+                    messageDiv.style.background = 'rgba(220, 53, 69, 0.2)';
+                    messageDiv.style.color = '#dc3545';
+                    messageDiv.style.border = '1px solid #dc3545';
+                }
+            } catch (e) {
+                messageDiv.textContent = '❌ Erro: ' + e.message;
+                messageDiv.style.background = 'rgba(220, 53, 69, 0.2)';
+                messageDiv.style.color = '#dc3545';
+                messageDiv.style.border = '1px solid #dc3545';
+            } finally {
+                // Restaurar botão
+                submitBtn.textContent = originalText;
+                submitBtn.disabled = false;
+            }
+        };
+        let movieIdToDelete = null;
+        function openDeleteModal(id, title) {
+            movieIdToDelete = id;
+            document.getElementById('deleteModalText').textContent = `Tem certeza que deseja excluir o filme "${title}"?`;
+            document.getElementById('deleteConfirmModal').style.display = 'flex';
+        }
+        function closeDeleteModal() {
+            movieIdToDelete = null;
+            document.getElementById('deleteConfirmModal').style.display = 'none';
+        }
+        document.getElementById('confirmDeleteBtn').onclick = async function() {
+            if (movieIdToDelete) {
+                await deleteMovie(movieIdToDelete);
+                closeDeleteModal();
+            }
+        };
+        async function deleteMovie(id) {
+            try {
+                const result = await authManager.deleteMovie(id);
+                if (result.success) {
+                    loadMovies();
+                } else {
+                    alert('Erro ao excluir: ' + result.error);
+                }
+            } catch (e) {
+                alert('Erro: ' + e.message);
+            }
+        }
+
+        // Navegação dinâmica por role
+        function setupNavigation() {
+            if (typeof authManager === 'undefined' || !authManager.isLoggedIn()) return;
+            const user = authManager.getCurrentUser();
+            const navTabs = document.getElementById('navTabs');
+            const navLogout = document.getElementById('navLogout');
+            navTabs.innerHTML = '';
+            let tabs = [];
+            if (user.isAdmin) {
+                tabs = [
+                    { id: 'tab-filmes', label: 'Filmes', icon: '🎬' },
+                    { id: 'tab-usuarios', label: 'Usuários', icon: '👥' },
+                    { id: 'tab-sistema', label: 'Sistema', icon: '⚙️' }
+                ];
+            } else {
+                tabs = [
+                    { id: 'tab-filmes', label: 'Filmes', icon: '🎬' },
+                    { id: 'tab-perfil', label: 'Perfil', icon: '👤' }
+                ];
+            }
+            tabs.forEach((tab, idx) => {
+                const li = document.createElement('li');
+                li.innerHTML = `<button class="tab-btn${idx===0?' active':''}" id="${tab.id}">${tab.icon} ${tab.label}</button>`;
+                navTabs.appendChild(li);
+            });
+            navLogout.style.display = 'block';
+            // Alternância de tabs
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.onclick = function() {
+                    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+                    showTabContent(btn.id);
+                    closeBurger();
+                };
+            });
+            // Exibir conteúdo inicial
+            showTabContent(tabs[0].id);
+        }
+        // Alternância de conteúdo das tabs
+        function showTabContent(tabId) {
+            // Esconde todas as seções
+            document.querySelectorAll('.tab-section').forEach(sec => sec.style.display = 'none');
+            // Exibe a seção da tab
+            const section = document.getElementById(tabId+'-section');
+            if (section) section.style.display = 'block';
+        }
+        // Burger menu
+        const burgerBtn = document.getElementById('burgerBtn');
+        burgerBtn.onclick = function() {
+            document.getElementById('navTabs').classList.toggle('open');
+            document.getElementById('navLogout').classList.toggle('open');
+        };
+        function closeBurger() {
+            document.getElementById('navTabs').classList.remove('open');
+            document.getElementById('navLogout').classList.remove('open');
+        }
+        // Estrutura das seções das tabs (inicial)
+        document.addEventListener('DOMContentLoaded', () => {
+            // Criar seções para cada tab
+            const main = document.querySelector('main');
+            // Filmes
+            let filmesSection = document.getElementById('tab-filmes-section');
+            if (!filmesSection) {
+                filmesSection = document.createElement('section');
+                filmesSection.id = 'tab-filmes-section';
+                filmesSection.className = 'tab-section';
+                filmesSection.style.display = 'none';
+                // Conteúdo dinâmico baseado no tipo de usuário
+                filmesSection.innerHTML = `
+                    <div id="filmesContent">
+                        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:24px;">
+                            <h3 id="moviesTitle">📺 Filmes</h3>
+                            <button class="btn" id="btnAddMovie" style="display:none;">+ Adicionar Filme</button>
+                        </div>
+
+                        <div id="filterSection" style="margin-bottom:24px;background:#181828;padding:16px;border-radius:8px;">
+                            <h4 style="margin:0 0 12px 0;color:#667eea;">🎯 Filtrar por Categoria</h4>
+                            <div id="filterTags" class="tag-list" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(80px,1fr));gap:6px;">
+                                <!-- Tags de filtro serão inseridas aqui -->
+                            </div>
+                            <div style="margin-top:12px;display:flex;gap:8px;align-items:center;">
+                                <button id="clearFilter" class="btn" style="background:#666;font-size:0.9em;padding:6px 12px;">Limpar Filtros</button>
+                                <span id="filterStatus" style="color:#aaa;font-size:0.9em;"></span>
+                            </div>
+                        </div>
+                        <div id="moviesContainer">
+                            <div class="loading">Carregando filmes...</div>
+                        </div>
+                    </div>
+                `;
+                main.appendChild(filmesSection);
+                document.getElementById('moviesContainer').remove();
+            }
+            // Usuários (admin)
+            if (!document.getElementById('tab-usuarios-section')) {
+                const usuariosSection = document.createElement('section');
+                usuariosSection.id = 'tab-usuarios-section';
+                usuariosSection.className = 'tab-section';
+                usuariosSection.style.display = 'none';
+                usuariosSection.innerHTML = '<div class="users-section" style="max-width:700px;margin:32px auto;"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px;"><h2 style="margin:0;">Usuários</h2><button class="btn" id="btnAddUser">+ Novo Usuário</button></div><div id="usersTableContainer"><div style="text-align:center;color:#aaa;padding:32px;">Carregando usuários...</div></div></div>';
+                main.appendChild(usuariosSection);
+            }
+            // Sistema (admin)
+            if (!document.getElementById('tab-sistema-section')) {
+                const sistemaSection = document.createElement('section');
+                sistemaSection.id = 'tab-sistema-section';
+                sistemaSection.className = 'tab-section';
+                sistemaSection.style.display = 'none';
+                sistemaSection.innerHTML = '<div class="system-section" style="max-width:900px;margin:32px auto;">\n  <h2 style="margin-bottom:24px;">Resumo do Sistema</h2>\n  <div class="system-cards" style="display:flex;gap:24px;flex-wrap:wrap;justify-content:center;margin-bottom:32px;">\n    <div class="sys-card" id="sysUsers" style="background:#23234a;padding:24px 32px;border-radius:12px;min-width:180px;text-align:center;">\n      <div style="font-size:2em;">👥</div>\n      <div style="font-size:1.5em;font-weight:bold;" id="sysUsersCount">-</div>\n      <div>Usuários</div>\n    </div>\n    <div class="sys-card" id="sysAdmins" style="background:#23234a;padding:24px 32px;border-radius:12px;min-width:180px;text-align:center;">\n      <div style="font-size:2em;">🛡️</div>\n      <div style="font-size:1.5em;font-weight:bold;" id="sysAdminsCount">-</div>\n      <div>Admins</div>\n    </div>\n    <div class="sys-card" id="sysClients" style="background:#23234a;padding:24px 32px;border-radius:12px;min-width:180px;text-align:center;">\n      <div style="font-size:2em;">👤</div>\n      <div style="font-size:1.5em;font-weight:bold;" id="sysClientsCount">-</div>\n      <div>Clientes</div>\n    </div>\n    <div class="sys-card" id="sysMovies" style="background:#23234a;padding:24px 32px;border-radius:12px;min-width:180px;text-align:center;">\n      <div style="font-size:2em;">🎬</div>\n      <div style="font-size:1.5em;font-weight:bold;" id="sysMoviesCount">-</div>\n      <div>Filmes</div>\n    </div>\n  </div>\n  <h3>Status de Sincronização</h3>\n  <div id="syncStatus" style="background:#181828;padding:18px 24px;border-radius:8px;margin-bottom:24px;">Carregando status...</div>\n  <h3>Ações Administrativas</h3>\n  <div style="background:#181828;padding:18px 24px;border-radius:8px;">(Em breve: Limpar cache, resetar dados, exportar backup...)</div>\n</div>';
+                main.appendChild(sistemaSection);
+            }
+            // Perfil (cliente)
+            if (!document.getElementById('tab-perfil-section')) {
+                const perfilSection = document.createElement('section');
+                perfilSection.id = 'tab-perfil-section';
+                perfilSection.className = 'tab-section';
+                perfilSection.style.display = 'none';
+                perfilSection.innerHTML = '<div class="profile-form-container" style="max-width:400px;margin:32px auto;background:#181828;padding:32px 24px;border-radius:12px;box-shadow:0 2px 12px rgba(0,0,0,0.15);"><h2 style="text-align:center;margin-bottom:24px;">Editar Perfil</h2><form id="profileForm"><div class="form-group"><label for="profileName">Nome</label><input type="text" id="profileName" required></div><div class="form-group"><label for="profileEmail">Email</label><input type="email" id="profileEmail" required></div><div class="form-group"><label for="profilePassword">Nova Senha</label><input type="password" id="profilePassword" placeholder="Deixe em branco para não alterar"></div><div class="form-group"><label for="profilePhoto">Foto (URL)</label><input type="url" id="profilePhoto" placeholder="https://..."></div><button type="submit" class="btn" style="width:100%;margin-top:18px;">Salvar Alterações</button><div id="profileMsg" style="margin-top:16px;"></div></form></div>';
+                main.appendChild(perfilSection);
+            }
+        });
+        // Inicializar navegação após login/session
+        window.addEventListener('load', () => {
+            setTimeout(() => {
+                setupNavigation();
+            }, 600);
+        });
+
+        async function loadProfileForm() {
+            if (typeof authManager === 'undefined' || !authManager.isLoggedIn()) return;
+            const user = authManager.getCurrentUser();
+            document.getElementById('profileName').value = user.name || '';
+            document.getElementById('profileEmail').value = user.email || '';
+            document.getElementById('profilePhoto').value = user.photo || '';
+        }
+        document.addEventListener('DOMContentLoaded', () => {
+            const form = document.getElementById('profileForm');
+            if (form) {
+                form.onsubmit = async function(e) {
+                    e.preventDefault();
+                    const name = document.getElementById('profileName').value;
+                    const email = document.getElementById('profileEmail').value;
+                    const password = document.getElementById('profilePassword').value;
+                    const photo = document.getElementById('profilePhoto').value;
+                    let result;
+                    if (typeof authManager !== 'undefined') {
+                        result = await authManager.updateProfile({ name, email, password, photo });
+                    }
+                    const msg = document.getElementById('profileMsg');
+                    if (result && result.success) {
+                        msg.textContent = 'Perfil atualizado com sucesso!';
+                        msg.style.color = '#28a745';
+                    } else {
+                        msg.textContent = result && result.error ? result.error : 'Erro ao atualizar perfil.';
+                        msg.style.color = '#dc3545';
+                    }
+                };
+            }
+        });
+        // Carregar dados ao exibir a tab Perfil
+        function showTabContent(tabId) {
+            document.querySelectorAll('.tab-section').forEach(sec => sec.style.display = 'none');
+            const section = document.getElementById(tabId+'-section');
+            if (section) section.style.display = 'block';
+            if (tabId === 'tab-perfil') loadProfileForm();
+        }
+
+        async function loadUsersTable() {
+            const container = document.getElementById('usersTableContainer');
+            if (!container) return;
+            container.innerHTML = '<div style="text-align:center;color:#aaa;padding:32px;">Carregando usuários...</div>';
+            let users = [];
+            if (typeof authManager !== 'undefined') {
+                const result = await authManager.getAllUsers();
+                if (result.success) users = result.users;
+            }
+            if (!users.length) {
+                container.innerHTML = '<div style="text-align:center;color:#aaa;padding:32px;">Nenhum usuário encontrado.</div>';
+                return;
+            }
+            let html = '<table style="width:100%;border-collapse:collapse;background:#191933;">';
+            html += '<thead><tr style="background:#23234a;"><th style="padding:8px 4px;">Nome</th><th>Email</th><th>Tipo</th><th style="width:120px;">Ações</th></tr></thead><tbody>';
+            users.forEach(user => {
+                html += `<tr style="border-bottom:1px solid #222;">
+                    <td style="padding:8px 4px;">${user.name}</td>
+                    <td>${user.email}</td>
+                    <td>${user.isAdmin ? 'Admin' : 'Cliente'}</td>
+                    <td>
+                        <button class="btn btn-edit-user" data-id="${user._id}">✏️</button>
+                        <button class="btn btn-delete-user" data-id="${user._id}">🗑️</button>
+                    </td>
+                </tr>`;
+            });
+            html += '</tbody></table>';
+            container.innerHTML = html;
+            const btnAddUser = document.getElementById('btnAddUser');
+            if (btnAddUser) {
+                btnAddUser.onclick = () => openUserModal();
+            }
+            document.querySelectorAll('.btn-edit-user').forEach(btn => {
+                btn.onclick = function() {
+                    const id = btn.getAttribute('data-id');
+                    console.log('Editar usuário:', id);
+                    if (document.getElementById('userModal')) {
+                        openUserModal(id);
+                    } else {
+                        alert('Modal de usuário não encontrado!');
+                    }
+                };
+            });
+            document.querySelectorAll('.btn-delete-user').forEach(btn => {
+                btn.onclick = function() {
+                    const id = btn.getAttribute('data-id');
+                    const user = users.find(u => u._id === id);
+                    console.log('Excluir usuário:', id, user);
+                    if (document.getElementById('deleteUserModal')) {
+                        openDeleteUserModal(id, user.name, user.email);
+                    } else {
+                        alert('Modal de exclusão não encontrado!');
+                    }
+                };
+            });
+        }
+        function openUserModal(id) {
+            const modal = document.getElementById('userModal');
+            const title = document.getElementById('userModalTitle');
+            const form = document.getElementById('userForm');
+            const msg = document.getElementById('userModalMsg');
+            msg.textContent = '';
+            if (!id) {
+                title.textContent = 'Novo Usuário';
+                form.reset();
+                document.getElementById('userId').value = '';
+            } else {
+                title.textContent = 'Editar Usuário';
+                // Buscar dados do usuário
+                authManager.getUserById(id).then(user => {
+                    document.getElementById('userId').value = user._id;
+                    document.getElementById('userName').value = user.name;
+                    document.getElementById('userEmail').value = user.email;
+                    document.getElementById('userRole').value = user.isAdmin ? 'true' : 'false';
+                });
+            }
+            modal.style.display = 'flex';
+        }
+        function closeUserModal() {
+            document.getElementById('userModal').style.display = 'none';
+        }
+        document.getElementById('btnAddUser').onclick = () => openUserModal();
+        document.getElementById('userForm').onsubmit = async function(e) {
+            e.preventDefault();
+            const id = document.getElementById('userId').value;
+            const name = document.getElementById('userName').value;
+            const email = document.getElementById('userEmail').value;
+            const password = document.getElementById('userPassword').value;
+            const isAdmin = document.getElementById('userRole').value === 'true';
+            let result;
+            if (id) {
+                result = await authManager.updateUser({ _id: id, name, email, password, isAdmin });
+            } else {
+                result = await authManager.createUser({ name, email, password, isAdmin });
+            }
+            const msg = document.getElementById('userModalMsg');
+            if (result && result.success) {
+                msg.textContent = 'Usuário salvo com sucesso!';
+                msg.style.color = '#28a745';
+                setTimeout(() => { closeUserModal(); loadUsersTable(); }, 800);
+            } else {
+                msg.textContent = result && result.error ? result.error : 'Erro ao salvar usuário.';
+                msg.style.color = '#dc3545';
+            }
+        };
+        let userIdToDelete = null;
+        function openDeleteUserModal(id, name, email) {
+            userIdToDelete = id;
+            document.getElementById('deleteUserModalText').textContent = `Tem certeza que deseja excluir o usuário "${name}" (${email})?`;
+            document.getElementById('deleteUserModal').style.display = 'flex';
+        }
+        function closeDeleteUserModal() {
+            userIdToDelete = null;
+            document.getElementById('deleteUserModal').style.display = 'none';
+        }
+        document.getElementById('confirmDeleteUserBtn').onclick = async function() {
+            if (userIdToDelete) {
+                await deleteUser(userIdToDelete);
+                closeDeleteUserModal();
+            }
+        };
+        async function deleteUser(id) {
+            const result = await authManager.deleteUser(id);
+            if (result && result.success) loadUsersTable();
+            else alert(result && result.error ? result.error : 'Erro ao excluir usuário.');
+        }
+        // Função unificada para alternar conteúdo das tabs
+        function showTabContent(tabId) {
+            document.querySelectorAll('.tab-section').forEach(sec => sec.style.display = 'none');
+            const section = document.getElementById(tabId+'-section');
+            if (section) section.style.display = 'block';
+            
+            if (tabId === 'tab-perfil') {
+                loadProfileForm();
+            } else if (tabId === 'tab-usuarios') {
+                loadUsersTable();
+            } else if (tabId === 'tab-sistema') {
+                loadSystemSummary();
+            } else if (tabId === 'tab-filmes') {
+                loadFilmesContent();
+            }
+        }
+
+        async function loadSystemSummary() {
+            // Contadores
+            let users = [], movies = [];
+            let admins = 0, clients = 0;
+            if (typeof authManager !== 'undefined') {
+                const u = await authManager.getAllUsers();
+                if (u.success) {
+                    users = u.users;
+                    admins = users.filter(x => x.isAdmin).length;
+                    clients = users.filter(x => !x.isAdmin).length;
+                }
+                const m = await authManager.getAllMovies();
+                if (m.success) movies = m.movies;
+            }
+            document.getElementById('sysUsersCount').textContent = users.length;
+            document.getElementById('sysAdminsCount').textContent = admins;
+            document.getElementById('sysClientsCount').textContent = clients;
+            document.getElementById('sysMoviesCount').textContent = movies.length;
+            // Status de sincronização (mock)
+            let syncMsg = 'Sincronização local/servidor ativa.';
+            if (typeof authManager !== 'undefined' && authManager.remoteUsersDB && authManager.remoteMoviesDB) {
+                syncMsg = 'Sincronização remota configurada.';
+            }
+            document.getElementById('syncStatus').textContent = syncMsg;
+        }
+
+
+        function loadFilmesContent() {
+            if (typeof authManager === 'undefined' || !authManager.isLoggedIn()) return;
+            const user = authManager.getCurrentUser();
+            const btnAddMovie = document.getElementById('btnAddMovie');
+            const moviesTitle = document.getElementById('moviesTitle');
+            
+            if (user.isAdmin) {
+                btnAddMovie.style.display = 'block';
+                moviesTitle.textContent = '📺 Todos os Filmes';
+                btnAddMovie.onclick = openAddMovieModal;
+            } else {
+                btnAddMovie.style.display = 'none';
+                moviesTitle.textContent = '📺 Seus Filmes';
+            }
+            bindAddMovieModalForm();
+            setupFilterSystem();
+            loadMovies();
+        }
+
+        function openAddMovieModal() {
+            document.getElementById('addMovieModal').style.display = 'flex';
+            document.getElementById('addMovieModalForm').reset();
+            document.getElementById('addMovieModalMsg').textContent = '';
+            // Renderizar tags de categoria para o modal de adicionar
+            renderCategoryTags('categoryTags', 'addMovieCategory');
+        }
+        function closeAddMovieModal() {
+            document.getElementById('addMovieModal').style.display = 'none';
+        }
+        function bindAddMovieModalForm() {
+            const form = document.getElementById('addMovieModalForm');
+            if (form) {
+                form.onsubmit = async function(e) {
+                    e.preventDefault();
+                    const title = document.getElementById('addMovieTitle').value;
+                    const description = document.getElementById('addMovieDescription').value;
+                    const trailer = document.getElementById('addMovieTrailer').value;
+                    const category = document.getElementById('addMovieCategory').value;
+                    const image = document.getElementById('addMovieImage').value;
+                    
+                    if (!title || !description || !trailer || !category || !image) {
+                        document.getElementById('addMovieModalMsg').textContent = 'Preencha todos os campos!';
+                        document.getElementById('addMovieModalMsg').style.color = '#dc3545';
+                        return;
+                    }
+                    
+                    try {
+                        const movie = { title, description, trailer, category, image };
+                        const result = await authManager.adicionarFilme(movie);
+                        
+                        const msg = document.getElementById('addMovieModalMsg');
+                        if (result.success) {
+                            msg.textContent = 'Filme adicionado com sucesso!';
+                            msg.style.color = '#28a745';
+                            setTimeout(() => {
+                                closeAddMovieModal();
+                                loadMovies();
+                            }, 1000);
+                        } else {
+                            msg.textContent = `Erro ao adicionar filme: ${result.error}`;
+                            msg.style.color = '#dc3545';
+                        }
+                    } catch (error) {
+                        document.getElementById('addMovieModalMsg').textContent = `Erro: ${error.message}`;
+                        document.getElementById('addMovieModalMsg').style.color = '#dc3545';
+                    }
+                };
+            }
+        }
+
+        function openTrailerModal(trailerUrl) {
+            const container = document.getElementById('trailerPlayerContainer');
+            let embedHtml = '';
+            if (/youtube\.com|youtu\.be/.test(trailerUrl)) {
+                // Extrair ID do vídeo do YouTube
+                let videoId = '';
+                const ytMatch = trailerUrl.match(/(?:youtube\.com\/(?:watch\?v=|embed\/)|youtu\.be\/)([\w-]+)/);
+                if (ytMatch) videoId = ytMatch[1];
+                if (videoId) {
+                    embedHtml = `<iframe width="100%" height="100%" src="https://www.youtube.com/embed/${videoId}?autoplay=1" frameborder="0" allow="autoplay; encrypted-media" allowfullscreen style="border-radius:8px;"></iframe>`;
+                } else {
+                    embedHtml = '<div style="color:#fff;text-align:center;">URL de YouTube inválida.</div>';
+                }
+            } else if (/\.mp4$|\.webm$|\.ogg$/.test(trailerUrl)) {
+                embedHtml = `<video src="${trailerUrl}" controls autoplay style="width:100%;height:100%;border-radius:8px;background:#000;"></video>`;
+            } else {
+                embedHtml = `<video src="${trailerUrl}" controls autoplay style="width:100%;height:100%;border-radius:8px;background:#000;"></video>`;
+            }
+            container.innerHTML = embedHtml;
+            document.getElementById('trailerModal').style.display = 'flex';
+        }
+        function closeTrailerModal() {
+            document.getElementById('trailerModal').style.display = 'none';
+            document.getElementById('trailerPlayerContainer').innerHTML = '';
+        }
+
+        function openMovieDetailModal(movie) {
+            const content = document.getElementById('movieDetailContent');
+            let trailerHtml = '';
+            if (movie.trailer) {
+                if (/youtube\.com|youtu\.be/.test(movie.trailer)) {
+                    let videoId = '';
+                    const ytMatch = movie.trailer.match(/(?:youtube\.com\/(?:watch\?v=|embed\/)|youtu\.be\/)([\w-]+)/);
+                    if (ytMatch) videoId = ytMatch[1];
+                    if (videoId) {
+                        trailerHtml = `<iframe width='100%' height='340' src='https://www.youtube.com/embed/${videoId}' frameborder='0' allow='autoplay; encrypted-media' allowfullscreen style='border-radius:10px;'></iframe>`;
+                    }
+                } else if (/\.mp4$|\.webm$|\.ogg$/.test(movie.trailer)) {
+                    trailerHtml = `<video src='${movie.trailer}' controls style='width:100%;max-height:340px;border-radius:10px;background:#000;'></video>`;
+                }
+            }
+            content.innerHTML = `
+              <div style='width:100%;display:flex;flex-direction:column;align-items:center;'>
+                <div style='width:100%;max-width:600px;margin-bottom:18px;'>${trailerHtml}</div>
+                <div style='display:flex;gap:24px;align-items:flex-start;width:100%;max-width:600px;flex-wrap:wrap;'>
+                  <img src='${movie.image || movie.thumb || ''}' alt='Thumb' style='width:120px;height:180px;object-fit:cover;border-radius:8px;box-shadow:0 2px 12px #0008;margin-right:18px;background:#23234a;'>
+                  <div style='flex:1;min-width:180px;'>
+                    <h2 style='margin:0 0 8px 0;font-size:1.5em;color:#fff;'>${movie.title}</h2>
+                    <div style='color:#67e;font-size:1em;margin-bottom:8px;'><strong>Categoria:</strong> ${movie.category || '-'}</div>
+                    <div style='color:#ccc;font-size:1.1em;margin-bottom:12px;'>${movie.description || ''}</div>
+                  </div>
+                </div>
+              </div>
+              <button class='btn' style='margin-top:32px;' onclick='closeMovieDetailModal()'>Voltar</button>
+            `;
+            document.getElementById('movieDetailModal').style.display = 'flex';
+        }
+        function closeMovieDetailModal() {
+            document.getElementById('movieDetailModal').style.display = 'none';
+            document.getElementById('movieDetailContent').innerHTML = '';
+        }
+
+        // Sistema de filtro de categorias
+        function setupFilterSystem() {
+            const filterContainer = document.getElementById('filterTags');
+            const clearFilterBtn = document.getElementById('clearFilter');
+            
+            if (!filterContainer) return;
+            
+            const categories = [
+                'acao', 'comedia', 'drama', 'terror', 'ficcao', 'animacao', 
+                'romance', 'suspense', 'documentario'
+            ];
+            
+            filterContainer.innerHTML = '';
+            
+            categories.forEach(category => {
+                const tag = document.createElement('div');
+                tag.className = `tag tag-${category}`;
+                tag.textContent = category.charAt(0).toUpperCase() + category.slice(1);
+                
+                tag.onclick = function() {
+                    tag.classList.toggle('selected');
+                    updateFilters();
+                };
+                
+                filterContainer.appendChild(tag);
+            });
+            
+            if (clearFilterBtn) {
+                clearFilterBtn.onclick = clearFilters;
+            }
+        }
+
+        function updateFilters() {
+            const selectedTags = document.querySelectorAll('#filterTags .tag.selected');
+            if (!window.selectedFilters) window.selectedFilters = [];
+            window.selectedFilters = Array.from(selectedTags).map(tag => 
+                tag.textContent.toLowerCase()
+            );
+            
+            const filterStatus = document.getElementById('filterStatus');
+            if (filterStatus) {
+                if (selectedFilters.length > 0) {
+                    filterStatus.textContent = `Filtros ativos: ${selectedFilters.join(', ')}`;
+                } else {
+                    filterStatus.textContent = 'Nenhum filtro ativo';
+                }
+            }
+            
+            filterMovies();
+        }
+
+        function clearFilters() {
+            document.querySelectorAll('#filterTags .tag.selected').forEach(tag => {
+                tag.classList.remove('selected');
+            });
+            if (!window.selectedFilters) window.selectedFilters = [];
+            window.selectedFilters = [];
+            
+            const filterStatus = document.getElementById('filterStatus');
+            if (filterStatus) {
+                filterStatus.textContent = 'Nenhum filtro ativo';
+            }
+            
+            filterMovies();
+        }
+
+        function filterMovies() {
+            const movieCards = document.querySelectorAll('.movie-card');
+            let visibleCount = 0;
+            
+            // Verificar se as variáveis globais existem
+            if (!window.selectedFilters) window.selectedFilters = [];
+            if (!window.allMovies) window.allMovies = [];
+            
+            if (window.selectedFilters.length === 0) {
+                // Mostrar todos os filmes
+                movieCards.forEach(card => {
+                    card.style.display = 'block';
+                    visibleCount++;
+                });
+            } else {
+                // Filtrar filmes
+                movieCards.forEach(card => {
+                    const movieTitle = card.querySelector('.movie-title').textContent;
+                    const movie = window.allMovies.find(m => m.title === movieTitle);
+                    
+                    if (movie && movie.category) {
+                        const movieCategories = movie.category.split(',').map(c => c.trim().toLowerCase());
+                        const hasMatchingCategory = window.selectedFilters.some(filter => 
+                            movieCategories.includes(filter)
+                        );
+                        card.style.display = hasMatchingCategory ? 'block' : 'none';
+                        if (hasMatchingCategory) visibleCount++;
+                    } else {
+                        card.style.display = 'none';
+                    }
+                });
+            }
+            
+            // Mostrar mensagem se não há filmes filtrados
+            const moviesGrid = document.querySelector('.movies-grid');
+            if (moviesGrid) {
+                let noResultsMsg = moviesGrid.querySelector('.no-results-msg');
+                if (visibleCount === 0 && window.selectedFilters.length > 0) {
+                    if (!noResultsMsg) {
+                        noResultsMsg = document.createElement('div');
+                        noResultsMsg.className = 'no-results-msg';
+                        noResultsMsg.style.cssText = 'grid-column:1/-1;text-align:center;padding:40px;color:#aaa;font-style:italic;';
+                        noResultsMsg.innerHTML = `
+                            <div style="font-size:2em;margin-bottom:16px;">🎬</div>
+                            <h3>Nenhum filme encontrado</h3>
+                            <p>Não há filmes com as categorias selecionadas.</p>
+                            <button class="btn" onclick="clearFilters()" style="margin-top:16px;">Limpar Filtros</button>
+                        `;
+                        moviesGrid.appendChild(noResultsMsg);
+                    }
+                } else if (noResultsMsg) {
+                    noResultsMsg.remove();
+                }
+            }
+        }
+
+        // Função para renderizar tags de categoria
+        function renderCategoryTags(containerId, inputId, selectedCategories = []) {
+            const container = document.getElementById(containerId);
+            const input = document.getElementById(inputId);
+            
+            if (!container || !input) {
+                console.error('Container ou input não encontrado:', containerId, inputId);
+                return;
+            }
+            
+            const categories = [
+                'acao', 'comedia', 'drama', 
+                'terror', 'ficcao', 'animacao', 
+                'romance', 'suspense', 'documentario'
+            ];
+            
+            container.innerHTML = '';
+            
+            categories.forEach(category => {
+                const tag = document.createElement('div');
+                tag.className = `tag tag-${category}`;
+                tag.textContent = category.charAt(0).toUpperCase() + category.slice(1);
+                
+                if (selectedCategories.includes(category)) {
+                    tag.classList.add('selected');
+                }
+                
+                tag.onclick = function() {
+                    tag.classList.toggle('selected');
+                    updateCategoryInput();
+                };
+                
+                container.appendChild(tag);
+            });
+            
+            function updateCategoryInput() {
+                const selectedTags = container.querySelectorAll('.tag.selected');
+                const selectedValues = Array.from(selectedTags).map(tag => 
+                    tag.textContent.toLowerCase()
+                );
+                input.value = selectedValues.join(', ');
+            }
+            
+            // Inicializar valor
+            updateCategoryInput();
+        }
+    </script>
+    
+    <!-- PWA Script -->
+    <script src="../../assets/js/pwa.js"></script>
+</body>
+</html>

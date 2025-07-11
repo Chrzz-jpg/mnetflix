@@ -1,0 +1,855 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Painel Administrativo - Meteflix</title>
+    
+    <!-- PouchDB -->
+    <script src="https://cdn.jsdelivr.net/npm/pouchdb@8.0.1/dist/pouchdb.min.js"></script>
+    
+    <!-- Configuração remota -->
+    <script src="../../data/remote_config.js"></script>
+    
+    <!-- Usuários padrão -->
+    <script src="../../data/default_users.js"></script>
+    
+    <!-- Configuração de autenticação -->
+    <script src="../../data/auth_config.js"></script>
+    
+    <!-- Interceptor de autenticação -->
+    <script src="../../data/auth_interceptor.js"></script>
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #333;
+        }
+        
+        .admin-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        .admin-header {
+            background: rgba(255, 255, 255, 0.95);
+            padding: 20px;
+            border-radius: 15px;
+            margin-bottom: 20px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            backdrop-filter: blur(10px);
+        }
+        
+        .admin-header h1 {
+            color: #667eea;
+            margin-bottom: 10px;
+            font-size: 2.5em;
+        }
+        
+        .user-info {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+        }
+        
+        .user-details {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        
+        .user-avatar {
+            width: 50px;
+            height: 50px;
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+            font-size: 1.2em;
+        }
+        
+        .admin-badge {
+            background: #dc3545;
+            color: white;
+            padding: 5px 10px;
+            border-radius: 15px;
+            font-size: 0.8em;
+            font-weight: bold;
+        }
+        
+        .logout-btn {
+            background: #dc3545;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 25px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.3s ease;
+        }
+        
+        .logout-btn:hover {
+            background: #c82333;
+            transform: translateY(-2px);
+        }
+        
+        .admin-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+        
+        .admin-card {
+            background: rgba(255, 255, 255, 0.95);
+            padding: 25px;
+            border-radius: 15px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            backdrop-filter: blur(10px);
+        }
+        
+        .admin-card h3 {
+            color: #667eea;
+            margin-bottom: 20px;
+            font-size: 1.5em;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .form-group {
+            margin-bottom: 15px;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+            color: #555;
+        }
+        
+        .form-group input, .form-group textarea, .form-group select {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e9ecef;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: border-color 0.3s ease;
+        }
+        
+        .form-group input:focus, .form-group textarea:focus, .form-group select:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        
+        .btn {
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            border-radius: 25px;
+            cursor: pointer;
+            font-weight: bold;
+            margin: 5px;
+            transition: all 0.3s ease;
+        }
+        
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        }
+        
+        .btn-secondary {
+            background: #6c757d;
+        }
+        
+        .btn-danger {
+            background: #dc3545;
+        }
+        
+        .btn-success {
+            background: #28a745;
+        }
+        
+        .movies-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+        
+        .movie-card {
+            background: white;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            transition: transform 0.3s ease;
+        }
+        
+        .movie-card:hover {
+            transform: translateY(-5px);
+        }
+        
+        .movie-poster {
+            height: 200px;
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 3em;
+        }
+        
+        .movie-info {
+            padding: 20px;
+        }
+        
+        .movie-title {
+            font-size: 1.2em;
+            font-weight: bold;
+            margin-bottom: 10px;
+            color: #333;
+        }
+        
+        .movie-genre {
+            color: #667eea;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        
+        .movie-year {
+            color: #666;
+            margin-bottom: 10px;
+        }
+        
+        .movie-description {
+            color: #777;
+            font-size: 0.9em;
+            line-height: 1.4;
+            margin-bottom: 15px;
+        }
+        
+        .movie-actions {
+            display: flex;
+            gap: 10px;
+        }
+        
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        
+        .stat-card {
+            background: rgba(255, 255, 255, 0.95);
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+        }
+        
+        .stat-number {
+            font-size: 2em;
+            font-weight: bold;
+            color: #667eea;
+            margin-bottom: 5px;
+        }
+        
+        .stat-label {
+            color: #666;
+            font-size: 0.9em;
+        }
+        
+        .message {
+            padding: 15px;
+            border-radius: 8px;
+            margin: 10px 0;
+            font-weight: bold;
+        }
+        
+        .success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        
+        .info {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+        
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #666;
+        }
+        
+        .nav-tabs {
+            display: flex;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 10px;
+            padding: 5px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+        }
+        
+        .nav-tab {
+            flex: 1;
+            padding: 15px;
+            text-align: center;
+            cursor: pointer;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+            font-weight: bold;
+        }
+        
+        .nav-tab.active {
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            color: white;
+        }
+        
+        .nav-tab:hover:not(.active) {
+            background: rgba(102, 126, 234, 0.1);
+        }
+        
+        .tab-content {
+            display: none;
+        }
+        
+        .tab-content.active {
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <div class="admin-container">
+        <!-- Header -->
+        <div class="admin-header">
+            <h1>🎬 Painel Administrativo - Meteflix</h1>
+            <div class="user-info">
+                <div class="user-details">
+                    <div class="user-avatar" id="userAvatar">A</div>
+                    <div>
+                        <div id="userName">Carregando...</div>
+                        <div id="userEmail"></div>
+                    </div>
+                    <div class="admin-badge">ADMIN</div>
+                </div>
+                <button onclick="logout()" class="logout-btn">🚪 Logout</button>
+            </div>
+        </div>
+        
+        <!-- Estatísticas -->
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-number" id="totalUsers">-</div>
+                <div class="stat-label">Usuários</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number" id="totalMovies">-</div>
+                <div class="stat-label">Filmes</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number" id="totalAdmins">-</div>
+                <div class="stat-label">Administradores</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number" id="totalClients">-</div>
+                <div class="stat-label">Clientes</div>
+            </div>
+        </div>
+        
+        <!-- Navegação por abas -->
+        <div class="nav-tabs">
+            <div class="nav-tab active" onclick="showTab('movies')">🎬 Gerenciar Filmes</div>
+            <div class="nav-tab" onclick="showTab('users')">👥 Gerenciar Usuários</div>
+            <div class="nav-tab" onclick="showTab('system')">⚙️ Sistema</div>
+        </div>
+        
+        <!-- Aba de Filmes -->
+        <div id="movies-tab" class="tab-content active">
+            <div class="admin-card">
+                <h3>➕ Adicionar Novo Filme</h3>
+                <form id="addMovieForm">
+                    <div class="form-group">
+                        <label>Título do Filme:</label>
+                        <input type="text" id="movieTitle" placeholder="Ex: Vingadores: Ultimato" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Gênero:</label>
+                        <select id="movieGenre" required>
+                            <option value="">Selecione um gênero</option>
+                            <option value="Ação">Ação</option>
+                            <option value="Aventura">Aventura</option>
+                            <option value="Comédia">Comédia</option>
+                            <option value="Drama">Drama</option>
+                            <option value="Ficção Científica">Ficção Científica</option>
+                            <option value="Fantasia">Fantasia</option>
+                            <option value="Terror">Terror</option>
+                            <option value="Romance">Romance</option>
+                            <option value="Crime">Crime</option>
+                            <option value="Documentário">Documentário</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Ano:</label>
+                        <input type="number" id="movieYear" placeholder="2024" min="1900" max="2030" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Descrição:</label>
+                        <textarea id="movieDescription" placeholder="Sinopse do filme..." rows="3"></textarea>
+                    </div>
+                    <button type="submit" class="btn">🎬 Adicionar Filme</button>
+    </form>
+                <div id="movieMessage"></div>
+            </div>
+            
+            <div class="admin-card">
+                <h3>📺 Catálogo de Filmes</h3>
+                <button onclick="loadAllMovies()" class="btn">🔄 Atualizar Lista</button>
+                <button onclick="clearMovies()" class="btn btn-danger">🗑️ Limpar Todos os Filmes</button>
+                <div id="moviesContainer" class="movies-grid">
+                    <div class="loading">Carregando filmes...</div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Aba de Usuários -->
+        <div id="users-tab" class="tab-content">
+            <div class="admin-card">
+                <h3>👥 Usuários Cadastrados</h3>
+                <button onclick="loadAllUsers()" class="btn">🔄 Atualizar Lista</button>
+                <button onclick="clearUsers()" class="btn btn-danger">🗑️ Limpar Todos os Usuários</button>
+                <div id="usersContainer">
+                    <div class="loading">Carregando usuários...</div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Aba do Sistema -->
+        <div id="system-tab" class="tab-content">
+            <div class="admin-card">
+                <h3>⚙️ Informações do Sistema</h3>
+                <button onclick="showSystemInfo()" class="btn">📊 Mostrar Informações</button>
+                <button onclick="resetSystem()" class="btn btn-danger">🔄 Resetar Sistema</button>
+                <div id="systemInfo">
+                    <div class="loading">Clique em "Mostrar Informações" para ver os detalhes do sistema</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Verificar se é admin
+        function checkAdminAccess() {
+            if (typeof authManager === 'undefined') {
+                alert('Sistema de autenticação não carregado');
+                window.location.href = '/pages/login/';
+                return false;
+            }
+            
+            if (!authManager.isLoggedIn()) {
+                alert('Você precisa estar logado');
+                window.location.href = '/pages/login/';
+                return false;
+            }
+            
+            if (!authManager.isAdmin()) {
+                alert('Acesso negado. Apenas administradores podem acessar esta página.');
+                window.location.href = '../home/index.html';
+                return false;
+            }
+            
+            return true;
+        }
+        
+        // Mostrar informações do usuário
+        function showUserInfo() {
+            if (authManager.isLoggedIn()) {
+                const user = authManager.getCurrentUser();
+                document.getElementById('userName').textContent = user.name;
+                document.getElementById('userEmail').textContent = user.email;
+                document.getElementById('userAvatar').textContent = user.name.charAt(0).toUpperCase();
+            }
+        }
+        
+        // Logout
+        function logout() {
+            authManager.logout();
+            alert('Logout realizado com sucesso!');
+            window.location.href = '/pages/login/';
+        }
+        window.logout = logout;
+        
+        // Navegação por abas
+        function showTab(tabName) {
+            // Esconder todas as abas
+            document.querySelectorAll('.tab-content').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            
+            // Remover classe active de todas as abas
+            document.querySelectorAll('.nav-tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            
+            // Mostrar aba selecionada
+            document.getElementById(tabName + '-tab').classList.add('active');
+            
+            // Adicionar classe active na aba clicada
+            event.target.classList.add('active');
+        }
+        
+        // Carregar estatísticas
+        async function loadStats() {
+            try {
+                const usersInfo = await authManager.usersDB.info();
+                const moviesInfo = await authManager.moviesDB.info();
+                
+                // Contar usuários por tipo
+                const usersResult = await authManager.usersDB.allDocs({
+                    include_docs: true,
+                    startkey: 'user_',
+                    endkey: 'user_\uffff'
+                });
+                
+                const admins = usersResult.rows.filter(row => row.doc.isAdmin).length;
+                const clients = usersResult.rows.filter(row => !row.doc.isAdmin).length;
+                
+                document.getElementById('totalUsers').textContent = usersInfo.doc_count;
+                document.getElementById('totalMovies').textContent = moviesInfo.doc_count;
+                document.getElementById('totalAdmins').textContent = admins;
+                document.getElementById('totalClients').textContent = clients;
+                
+            } catch (error) {
+                console.error('Erro ao carregar estatísticas:', error);
+            }
+        }
+        
+        // Adicionar filme
+        async function addMovie(event) {
+            event.preventDefault();
+            
+            const title = document.getElementById('movieTitle').value.trim();
+            const genre = document.getElementById('movieGenre').value;
+            const year = document.getElementById('movieYear').value;
+            const description = document.getElementById('movieDescription').value.trim();
+            
+            if (!title || !genre || !year) {
+                showMessage('movieMessage', 'Preencha título, gênero e ano!', 'error');
+                return;
+            }
+            
+            try {
+                const movie = {
+                    title: title,
+                    genre: genre,
+                    year: year,
+                    description: description || 'Sem descrição'
+                };
+                
+                const result = await authManager.adicionarFilme(movie);
+                
+                if (result.success) {
+                    showMessage('movieMessage', 'Filme adicionado com sucesso!', 'success');
+                    document.getElementById('addMovieForm').reset();
+                    loadAllMovies();
+                    loadStats();
+                } else {
+                    showMessage('movieMessage', `Erro: ${result.error}`, 'error');
+                }
+            } catch (error) {
+                showMessage('movieMessage', `Erro: ${error.message}`, 'error');
+            }
+        }
+        
+        // Carregar todos os filmes
+        async function loadAllMovies() {
+            const container = document.getElementById('moviesContainer');
+            container.innerHTML = '<div class="loading">Carregando filmes...</div>';
+            
+            try {
+                const result = await authManager.getAllMovies();
+                
+                if (result.success) {
+                    if (result.movies.length === 0) {
+                        container.innerHTML = '<div class="loading">Nenhum filme cadastrado</div>';
+                    } else {
+                        let moviesHtml = '';
+                        result.movies.forEach(movie => {
+                            moviesHtml += `
+                                <div class="movie-card">
+                                    <div class="movie-poster">🎬</div>
+                                    <div class="movie-info">
+                                        <div class="movie-title">${movie.title}</div>
+                                        <div class="movie-genre">${movie.genre}</div>
+                                        <div class="movie-year">${movie.year}</div>
+                                        <div class="movie-description">${movie.description || 'Sem descrição'}</div>
+                                        <div class="movie-actions">
+                                            <button onclick="editMovie('${movie._id}')" class="btn btn-secondary">✏️ Editar</button>
+                                            <button onclick="deleteMovie('${movie._id}')" class="btn btn-danger">🗑️ Excluir</button>
+                                        </div>
+                                    </div>
+                                </div>
+                            `;
+                        });
+                        container.innerHTML = moviesHtml;
+                    }
+                } else {
+                    container.innerHTML = `<div class="error">Erro: ${result.error}</div>`;
+                }
+            } catch (error) {
+                container.innerHTML = `<div class="error">Erro: ${error.message}</div>`;
+            }
+        }
+        
+        // Carregar todos os usuários
+        async function loadAllUsers() {
+            const container = document.getElementById('usersContainer');
+            container.innerHTML = '<div class="loading">Carregando usuários...</div>';
+            
+            try {
+                const result = await authManager.usersDB.allDocs({
+                    include_docs: true,
+                    startkey: 'user_',
+                    endkey: 'user_\uffff'
+                });
+                
+                if (result.rows.length === 0) {
+                    container.innerHTML = '<div class="loading">Nenhum usuário cadastrado</div>';
+                } else {
+                    let usersHtml = '<div style="display: grid; gap: 15px;">';
+                    result.rows.forEach(row => {
+                        const user = row.doc;
+                        usersHtml += `
+                            <div style="background: white; padding: 20px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
+                                <div style="display: flex; justify-content: space-between; align-items: center;">
+                                    <div>
+                                        <strong>${user.name}</strong> (${user.email})
+                                        <br>
+                                        <small style="color: #666;">
+                                            Criado em: ${new Date(user.createdAt).toLocaleString()}
+                                        </small>
+                                        <br>
+                                        <span style="background: ${user.isAdmin ? '#dc3545' : '#28a745'}; color: white; padding: 2px 8px; border-radius: 10px; font-size: 0.8em;">
+                                            ${user.isAdmin ? 'ADMIN' : 'CLIENTE'}
+                                        </span>
+                                    </div>
+                                    <button onclick="deleteUser('${user._id}')" class="btn btn-danger">🗑️</button>
+                                </div>
+                            </div>
+                        `;
+                    });
+                    usersHtml += '</div>';
+                    container.innerHTML = usersHtml;
+                }
+            } catch (error) {
+                container.innerHTML = `<div class="error">Erro: ${error.message}</div>`;
+            }
+        }
+        
+        // Mostrar informações do sistema
+        async function showSystemInfo() {
+            const container = document.getElementById('systemInfo');
+            container.innerHTML = '<div class="loading">Carregando informações...</div>';
+            
+            try {
+                const usersInfo = await authManager.usersDB.info();
+                const moviesInfo = await authManager.moviesDB.info();
+                
+                container.innerHTML = `
+                    <div style="background: #f8f9fa; padding: 20px; border-radius: 10px; margin-top: 15px;">
+                        <h4>📊 Informações do Sistema:</h4>
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 15px;">
+                            <div>
+                                <strong>Banco de Usuários:</strong><br>
+                                • Documentos: ${usersInfo.doc_count}<br>
+                                • Tamanho: ${(usersInfo.data_size / 1024).toFixed(2)} KB<br>
+                                • Última atualização: ${new Date(usersInfo.update_seq).toLocaleString()}
+                            </div>
+                            <div>
+                                <strong>Banco de Filmes:</strong><br>
+                                • Documentos: ${moviesInfo.doc_count}<br>
+                                • Tamanho: ${(moviesInfo.data_size / 1024).toFixed(2)} KB<br>
+                                • Última atualização: ${new Date(moviesInfo.update_seq).toLocaleString()}
+                            </div>
+                        </div>
+                        <div style="margin-top: 15px;">
+                            <strong>Configuração:</strong><br>
+                            • Sincronização: ${authManager.remoteUsersDB ? 'Ativa' : 'Desativada'}<br>
+                            • Usuário atual: ${authManager.getCurrentUser().name}<br>
+                            • Sessão ativa: ${authManager.isLoggedIn() ? 'Sim' : 'Não'}
+                        </div>
+                    </div>
+                `;
+            } catch (error) {
+                container.innerHTML = `<div class="error">Erro: ${error.message}</div>`;
+            }
+        }
+        
+        // Funções auxiliares
+        function showMessage(elementId, message, type) {
+            const element = document.getElementById(elementId);
+            element.textContent = message;
+            element.className = `message ${type}`;
+            element.style.display = 'block';
+            
+            setTimeout(() => {
+                element.style.display = 'none';
+            }, 5000);
+        }
+        
+        // Editar filme
+        async function editMovie(movieId) {
+            alert('Funcionalidade de edição será implementada em breve!');
+        }
+        
+        // Excluir filme
+        async function deleteMovie(movieId) {
+            if (confirm('Tem certeza que deseja excluir este filme?')) {
+                try {
+                    const movie = await authManager.moviesDB.get(movieId);
+                    await authManager.moviesDB.remove(movie);
+                    showMessage('movieMessage', 'Filme excluído com sucesso!', 'success');
+                    loadAllMovies();
+                    loadStats();
+                } catch (error) {
+                    showMessage('movieMessage', `Erro ao excluir filme: ${error.message}`, 'error');
+                }
+            }
+        }
+        
+        // Excluir usuário
+        async function deleteUser(userId) {
+            if (confirm('Tem certeza que deseja excluir este usuário?')) {
+                try {
+                    const user = await authManager.usersDB.get(userId);
+                    await authManager.usersDB.remove(user);
+                    showMessage('movieMessage', 'Usuário excluído com sucesso!', 'success');
+                    loadAllUsers();
+                    loadStats();
+                } catch (error) {
+                    showMessage('movieMessage', `Erro ao excluir usuário: ${error.message}`, 'error');
+                }
+            }
+        }
+        
+        // Limpar todos os filmes
+        async function clearMovies() {
+            if (confirm('Tem certeza que deseja excluir TODOS os filmes? Esta ação não pode ser desfeita!')) {
+                try {
+                    const result = await authManager.moviesDB.allDocs({
+                        include_docs: true
+                    });
+                    
+                    for (const row of result.rows) {
+                        await authManager.moviesDB.remove(row.doc);
+                    }
+                    
+                    showMessage('movieMessage', 'Todos os filmes foram excluídos!', 'success');
+                    loadAllMovies();
+                    loadStats();
+                } catch (error) {
+                    showMessage('movieMessage', `Erro ao limpar filmes: ${error.message}`, 'error');
+                }
+            }
+        }
+        
+        // Limpar todos os usuários
+        async function clearUsers() {
+            if (confirm('Tem certeza que deseja excluir TODOS os usuários? Esta ação não pode ser desfeita!')) {
+                try {
+                    const result = await authManager.usersDB.allDocs({
+                        include_docs: true,
+                        startkey: 'user_',
+                        endkey: 'user_\uffff'
+                    });
+                    
+                    for (const row of result.rows) {
+                        await authManager.usersDB.remove(row.doc);
+                    }
+                    
+                    showMessage('movieMessage', 'Todos os usuários foram excluídos!', 'success');
+                    loadAllUsers();
+                    loadStats();
+                } catch (error) {
+                    showMessage('movieMessage', `Erro ao limpar usuários: ${error.message}`, 'error');
+                }
+            }
+        }
+        
+        // Resetar sistema
+        async function resetSystem() {
+            if (confirm('Tem certeza que deseja resetar todo o sistema? Todos os dados serão perdidos!')) {
+                try {
+                    // Limpar filmes
+                    const moviesResult = await authManager.moviesDB.allDocs({
+                        include_docs: true
+                    });
+                    
+                    for (const row of moviesResult.rows) {
+                        await authManager.moviesDB.remove(row.doc);
+                    }
+                    
+                    // Limpar usuários
+                    const usersResult = await authManager.usersDB.allDocs({
+                        include_docs: true,
+                        startkey: 'user_',
+                        endkey: 'user_\uffff'
+                    });
+                    
+                    for (const row of usersResult.rows) {
+                        await authManager.usersDB.remove(row.doc);
+                    }
+                    
+                    // Reinicializar dados padrão
+                    await initializeDefaultData(authManager);
+                    
+                    showMessage('movieMessage', 'Sistema resetado com sucesso!', 'success');
+                    loadAllMovies();
+                    loadAllUsers();
+                    loadStats();
+                } catch (error) {
+                    showMessage('movieMessage', `Erro ao resetar sistema: ${error.message}`, 'error');
+                }
+            }
+        }
+        
+        // Inicializar página
+        window.addEventListener('load', () => {
+            if (checkAdminAccess()) {
+                showUserInfo();
+                loadStats();
+                loadAllMovies();
+            }
+        });
+        
+        // Event listeners
+        document.getElementById('addMovieForm').addEventListener('submit', addMovie);
+    </script>
+</body>
+</html>

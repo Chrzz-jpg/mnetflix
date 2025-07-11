@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Debug Usuários - Meteflix</title>
+    
+    <!-- PouchDB -->
+    <script src="https://cdn.jsdelivr.net/npm/pouchdb@8.0.1/dist/pouchdb.min.js"></script>
+    
+    <!-- Configuração remota -->
+    <script src="data/remote_config.js"></script>
+    
+    <!-- Configuração de autenticação -->
+    <script src="data/auth_config.js"></script>
+    
+    <!-- Inicialização do sistema -->
+    <script src="data/init_system.js"></script>
+    
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 600px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #f0f0f0;
+        }
+        
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        h1 {
+            color: #333;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        
+        .btn {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 10px 5px;
+            font-size: 14px;
+        }
+        
+        .btn:hover {
+            background: #0056b3;
+        }
+        
+        .btn-success {
+            background: #28a745;
+        }
+        
+        .btn-success:hover {
+            background: #1e7e34;
+        }
+        
+        .btn-danger {
+            background: #dc3545;
+        }
+        
+        .btn-danger:hover {
+            background: #c82333;
+        }
+        
+        .log {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 5px;
+            padding: 15px;
+            margin: 15px 0;
+            font-family: monospace;
+            font-size: 12px;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        
+        .status {
+            padding: 10px;
+            border-radius: 5px;
+            margin: 10px 0;
+            font-weight: bold;
+        }
+        
+        .success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        
+        .info {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🐛 Debug Usuários - Meteflix</h1>
+        
+        <div id="status"></div>
+        
+        <div style="text-align: center; margin: 20px 0;">
+            <button onclick="testSystem()" class="btn">🔍 Testar Sistema</button>
+            <button onclick="createUsers()" class="btn btn-success">👥 Criar Usuários</button>
+            <button onclick="testLogin()" class="btn">🔐 Testar Login</button>
+            <button onclick="clearData()" class="btn btn-danger">🗑️ Limpar</button>
+        </div>
+        
+        <div class="log" id="log">
+            <div>Log de debug aparecerá aqui...</div>
+        </div>
+        
+        <div style="margin-top: 20px; padding: 15px; background: #e9ecef; border-radius: 5px;">
+            <h3>📋 Credenciais:</h3>
+            <p><strong>Admin:</strong> admin@meteflix.com / admin123</p>
+            <p><strong>Cliente:</strong> cliente@meteflix.com / cliente123</p>
+        </div>
+    </div>
+
+    <script>
+        // Função para adicionar log
+        function addLog(message) {
+            const logDiv = document.getElementById('log');
+            const timestamp = new Date().toLocaleTimeString();
+            logDiv.innerHTML += `<div>[${timestamp}] ${message}</div>`;
+            logDiv.scrollTop = logDiv.scrollHeight;
+        }
+        
+        // Função para mostrar status
+        function showStatus(message, type = 'info') {
+            const statusDiv = document.getElementById('status');
+            statusDiv.innerHTML = `<div class="status ${type}">${message}</div>`;
+        }
+        
+        // Testar sistema
+        async function testSystem() {
+            addLog('🔍 Testando sistema...');
+            
+            try {
+                // Verificar PouchDB
+                if (typeof PouchDB === 'undefined') {
+                    addLog('❌ PouchDB não carregado');
+                    showStatus('PouchDB não carregado', 'error');
+                    return;
+                }
+                addLog('✅ PouchDB carregado');
+                
+                // Verificar authManager
+                if (typeof authManager === 'undefined') {
+                    addLog('❌ AuthManager não carregado');
+                    showStatus('AuthManager não carregado', 'error');
+                    return;
+                }
+                addLog('✅ AuthManager carregado');
+                
+                // Verificar bancos
+                const usersInfo = await authManager.usersDB.info();
+                const moviesInfo = await authManager.moviesDB.info();
+                
+                addLog(`✅ Banco de usuários: ${usersInfo.doc_count} documentos`);
+                addLog(`✅ Banco de filmes: ${moviesInfo.doc_count} documentos`);
+                
+                showStatus('Sistema funcionando corretamente', 'success');
+                
+            } catch (error) {
+                addLog(`❌ Erro no teste: ${error.message}`);
+                showStatus(`Erro: ${error.message}`, 'error');
+            }
+        }
+        
+        // Criar usuários
+        async function createUsers() {
+            addLog('👥 Criando usuários padrão...');
+            
+            try {
+                const defaultUsers = [
+                    {
+                        name: "Administrador",
+                        email: "admin@meteflix.com",
+                        password: "admin123",
+                        isAdmin: true,
+                        createdAt: "2024-01-01T00:00:00.000Z"
+                    },
+                    {
+                        name: "Cliente Demo",
+                        email: "cliente@meteflix.com", 
+                        password: "cliente123",
+                        isAdmin: false,
+                        createdAt: "2024-01-01T00:00:00.000Z"
+                    }
+                ];
+                
+                let createdCount = 0;
+                
+                for (const userData of defaultUsers) {
+                    // Verificar se usuário já existe
+                    const existingUser = await authManager.findUserByEmail(userData.email);
+                    if (!existingUser) {
+                        const hashedPassword = await authManager.hashPassword(userData.password);
+                        
+                        const user = {
+                            _id: 'user_' + Date.now() + Math.random(),
+                            email: userData.email,
+                            password: hashedPassword,
+                            name: userData.name,
+                            isAdmin: userData.isAdmin,
+                            createdAt: userData.createdAt,
+                            isActive: true
+                        };
+                        
+                        await authManager.usersDB.put(user);
+                        addLog(`✅ Usuário criado: ${userData.name} (${userData.email})`);
+                        createdCount++;
+                    } else {
+                        addLog(`ℹ️ Usuário já existe: ${userData.email}`);
+                    }
+                }
+                
+                if (createdCount > 0) {
+                    showStatus(`${createdCount} usuário(s) criado(s)`, 'success');
+                } else {
+                    showStatus('Todos os usuários já existem', 'info');
+                }
+                
+            } catch (error) {
+                addLog(`❌ Erro ao criar usuários: ${error.message}`);
+                showStatus(`Erro: ${error.message}`, 'error');
+            }
+        }
+        
+        // Testar login
+        async function testLogin() {
+            addLog('🔐 Testando login...');
+            
+            try {
+                // Testar admin
+                const adminResult = await authManager.login('admin@meteflix.com', 'admin123');
+                if (adminResult.success) {
+                    addLog('✅ Login admin: OK');
+                    authManager.logout();
+                } else {
+                    addLog(`❌ Login admin falhou: ${adminResult.error}`);
+                    return;
+                }
+                
+                // Testar cliente
+                const clientResult = await authManager.login('cliente@meteflix.com', 'cliente123');
+                if (clientResult.success) {
+                    addLog('✅ Login cliente: OK');
+                    authManager.logout();
+                } else {
+                    addLog(`❌ Login cliente falhou: ${clientResult.error}`);
+                    return;
+                }
+                
+                showStatus('Todos os logins funcionando!', 'success');
+                
+            } catch (error) {
+                addLog(`❌ Erro no teste de login: ${error.message}`);
+                showStatus(`Erro: ${error.message}`, 'error');
+            }
+        }
+        
+        // Limpar dados
+        async function clearData() {
+            if (!confirm('Limpar todos os dados?')) return;
+            
+            addLog('🗑️ Limpando dados...');
+            
+            try {
+                // Limpar usuários
+                const usersResult = await authManager.usersDB.allDocs({
+                    include_docs: true,
+                    startkey: 'user_',
+                    endkey: 'user_\uffff'
+                });
+                
+                for (const row of usersResult.rows) {
+                    await authManager.usersDB.remove(row.doc);
+                }
+                
+                // Limpar filmes
+                const moviesResult = await authManager.moviesDB.allDocs({
+                    include_docs: true
+                });
+                
+                for (const row of moviesResult.rows) {
+                    await authManager.moviesDB.remove(row.doc);
+                }
+                
+                addLog('✅ Dados limpos');
+                showStatus('Dados limpos com sucesso', 'success');
+                
+            } catch (error) {
+                addLog(`❌ Erro ao limpar: ${error.message}`);
+                showStatus(`Erro: ${error.message}`, 'error');
+            }
+        }
+        
+        // Inicializar página
+        window.addEventListener('load', () => {
+            addLog('🚀 Página carregada');
+            addLog('Clique em "Testar Sistema" para começar');
+        });
+    </script>
+</body>
+</html> 

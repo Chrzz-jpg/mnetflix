@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Debug Login - Meteflix</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .section {
+            margin-bottom: 30px;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        .section h3 {
+            margin-top: 0;
+            color: #333;
+        }
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+        input {
+            padding: 8px;
+            margin: 5px;
+            border: 1px solid #ddd;
+            border-radius: 3px;
+            width: 200px;
+        }
+        .log {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            padding: 10px;
+            border-radius: 3px;
+            max-height: 300px;
+            overflow-y: auto;
+            font-family: monospace;
+            font-size: 12px;
+        }
+        .success { color: green; }
+        .error { color: red; }
+        .info { color: blue; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Debug Login - Meteflix</h1>
+        
+        <!-- PouchDB -->
+        <script src="https://cdn.jsdelivr.net/npm/pouchdb@8.0.1/dist/pouchdb.min.js"></script>
+        
+        <!-- Configuração de autenticação -->
+        <script src="../../data/auth_config.js"></script>
+        
+        <div class="section">
+            <h3>1. Status do Banco de Dados</h3>
+            <button onclick="checkDatabaseStatus()">Verificar Status</button>
+            <div id="dbStatus" class="log"></div>
+        </div>
+        
+        <div class="section">
+            <h3>2. Listar Usuários Cadastrados</h3>
+            <button onclick="listUsers()">Listar Usuários</button>
+            <div id="usersList" class="log"></div>
+        </div>
+        
+        <div class="section">
+            <h3>3. Testar Login</h3>
+            <input type="email" id="testEmail" placeholder="Email" value="teste@exemplo.com">
+            <input type="password" id="testPassword" placeholder="Senha" value="123456">
+            <button onclick="testLogin()">Testar Login</button>
+            <div id="loginResult" class="log"></div>
+        </div>
+        
+        <div class="section">
+            <h3>4. Registrar Novo Usuário</h3>
+            <input type="text" id="newName" placeholder="Nome" value="Usuário Teste">
+            <input type="email" id="newEmail" placeholder="Email" value="teste@exemplo.com">
+            <input type="password" id="newPassword" placeholder="Senha" value="123456">
+            <button onclick="registerUser()">Registrar Usuário</button>
+            <div id="registerResult" class="log"></div>
+        </div>
+        
+        <div class="section">
+            <h3>5. Status da Sessão</h3>
+            <button onclick="checkSession()">Verificar Sessão</button>
+            <button onclick="clearSession()">Limpar Sessão</button>
+            <div id="sessionStatus" class="log"></div>
+        </div>
+        
+        <div class="section">
+            <h3>6. Logs de Debug</h3>
+            <button onclick="clearLogs()">Limpar Logs</button>
+            <div id="debugLogs" class="log"></div>
+        </div>
+    </div>
+
+    <script>
+        // Função para adicionar logs
+        function addLog(message, type = 'info') {
+            const logsDiv = document.getElementById('debugLogs');
+            const timestamp = new Date().toLocaleTimeString();
+            const logEntry = document.createElement('div');
+            logEntry.className = type;
+            logEntry.textContent = `[${timestamp}] ${message}`;
+            logsDiv.appendChild(logEntry);
+            logsDiv.scrollTop = logsDiv.scrollHeight;
+        }
+        
+        // Função para limpar logs
+        function clearLogs() {
+            document.getElementById('debugLogs').innerHTML = '';
+        }
+        
+        // Função para verificar status do banco
+        async function checkDatabaseStatus() {
+            const statusDiv = document.getElementById('dbStatus');
+            statusDiv.innerHTML = 'Verificando...';
+            
+            try {
+                addLog('Verificando status do banco de dados...');
+                
+                // Verificar se PouchDB está disponível
+                if (typeof PouchDB === 'undefined') {
+                    throw new Error('PouchDB não está carregado');
+                }
+                
+                // Verificar se authManager está disponível
+                if (typeof authManager === 'undefined') {
+                    throw new Error('AuthManager não está carregado');
+                }
+                
+                // Verificar bancos de dados
+                const usersDBInfo = await authManager.usersDB.info();
+                const moviesDBInfo = await authManager.moviesDB.info();
+                
+                let status = `
+                    <div class="success">✅ PouchDB carregado com sucesso</div>
+                    <div class="success">✅ AuthManager inicializado</div>
+                    <div class="info">📊 Banco de usuários: ${usersDBInfo.doc_count} documentos</div>
+                    <div class="info">📊 Banco de filmes: ${moviesDBInfo.doc_count} documentos</div>
+                    <div class="info">🔄 Sincronização remota: ${authManager.remoteUsersDB ? 'Ativa' : 'Desativada'}</div>
+                `;
+                
+                statusDiv.innerHTML = status;
+                addLog('Status do banco verificado com sucesso', 'success');
+                
+            } catch (error) {
+                statusDiv.innerHTML = `<div class="error">❌ Erro: ${error.message}</div>`;
+                addLog(`Erro ao verificar status: ${error.message}`, 'error');
+            }
+        }
+        
+        // Função para listar usuários
+        async function listUsers() {
+            const usersDiv = document.getElementById('usersList');
+            usersDiv.innerHTML = 'Buscando usuários...';
+            
+            try {
+                addLog('Buscando usuários cadastrados...');
+                
+                const result = await authManager.usersDB.allDocs({
+                    include_docs: true,
+                    startkey: 'user_',
+                    endkey: 'user_\uffff'
+                });
+                
+                if (result.rows.length === 0) {
+                    usersDiv.innerHTML = '<div class="info">Nenhum usuário cadastrado encontrado</div>';
+                    addLog('Nenhum usuário encontrado', 'info');
+                } else {
+                    let usersList = '<div class="success">Usuários encontrados:</div>';
+                    result.rows.forEach((row, index) => {
+                        const user = row.doc;
+                        usersList += `
+                            <div class="info">
+                                ${index + 1}. ${user.name} (${user.email}) - Criado em: ${new Date(user.createdAt).toLocaleString()}
+                            </div>
+                        `;
+                    });
+                    usersDiv.innerHTML = usersList;
+                    addLog(`Encontrados ${result.rows.length} usuários`, 'success');
+                }
+                
+            } catch (error) {
+                usersDiv.innerHTML = `<div class="error">❌ Erro: ${error.message}</div>`;
+                addLog(`Erro ao listar usuários: ${error.message}`, 'error');
+            }
+        }
+        
+        // Função para testar login
+        async function testLogin() {
+            const resultDiv = document.getElementById('loginResult');
+            const email = document.getElementById('testEmail').value;
+            const password = document.getElementById('testPassword').value;
+            
+            resultDiv.innerHTML = 'Testando login...';
+            
+            try {
+                addLog(`Testando login com email: ${email}`);
+                
+                const result = await authManager.login(email, password);
+                
+                if (result.success) {
+                    resultDiv.innerHTML = `
+                        <div class="success">✅ Login realizado com sucesso!</div>
+                        <div class="info">Usuário: ${result.user.name} (${result.user.email})</div>
+                    `;
+                    addLog('Login realizado com sucesso', 'success');
+                } else {
+                    resultDiv.innerHTML = `<div class="error">❌ Erro no login: ${result.error}</div>`;
+                    addLog(`Erro no login: ${result.error}`, 'error');
+                }
+                
+            } catch (error) {
+                resultDiv.innerHTML = `<div class="error">❌ Erro: ${error.message}</div>`;
+                addLog(`Erro ao testar login: ${error.message}`, 'error');
+            }
+        }
+        
+        // Função para registrar usuário
+        async function registerUser() {
+            const resultDiv = document.getElementById('registerResult');
+            const name = document.getElementById('newName').value;
+            const email = document.getElementById('newEmail').value;
+            const password = document.getElementById('newPassword').value;
+            
+            resultDiv.innerHTML = 'Registrando usuário...';
+            
+            try {
+                addLog(`Registrando usuário: ${name} (${email})`);
+                
+                const result = await authManager.registerUser(email, password, name);
+                
+                if (result.success) {
+                    resultDiv.innerHTML = `
+                        <div class="success">✅ Usuário registrado com sucesso!</div>
+                        <div class="info">ID: ${result.userId}</div>
+                    `;
+                    addLog('Usuário registrado com sucesso', 'success');
+                } else {
+                    resultDiv.innerHTML = `<div class="error">❌ Erro no registro: ${result.error}</div>`;
+                    addLog(`Erro no registro: ${result.error}`, 'error');
+                }
+                
+            } catch (error) {
+                resultDiv.innerHTML = `<div class="error">❌ Erro: ${error.message}</div>`;
+                addLog(`Erro ao registrar usuário: ${error.message}`, 'error');
+            }
+        }
+        
+        // Função para verificar sessão
+        function checkSession() {
+            const sessionDiv = document.getElementById('sessionStatus');
+            
+            const currentUser = authManager.getCurrentUser();
+            const isLoggedIn = authManager.isLoggedIn();
+            const sessionStorage = window.sessionStorage.getItem('meteflix_user');
+            
+            let status = `
+                <div class="info">Status do login: ${isLoggedIn ? 'Logado' : 'Não logado'}</div>
+            `;
+            
+            if (currentUser) {
+                status += `
+                    <div class="success">Usuário atual: ${currentUser.name} (${currentUser.email})</div>
+                `;
+            }
+            
+            if (sessionStorage) {
+                status += `
+                    <div class="info">Sessão salva: ${sessionStorage}</div>
+                `;
+            } else {
+                status += `<div class="info">Nenhuma sessão salva</div>`;
+            }
+            
+            sessionDiv.innerHTML = status;
+            addLog('Status da sessão verificado', 'info');
+        }
+        
+        // Função para limpar sessão
+        function clearSession() {
+            authManager.logout();
+            document.getElementById('sessionStatus').innerHTML = '<div class="info">Sessão limpa</div>';
+            addLog('Sessão limpa', 'info');
+        }
+        
+        // Inicializar página
+        window.addEventListener('load', () => {
+            addLog('Página de debug carregada');
+            checkDatabaseStatus();
+        });
+    </script>
+</body>
+</html> 

@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Meteflix - Login Aprimorado</title>
+    <link rel="stylesheet" href="index.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css" />
+    
+    <!-- PouchDB -->
+    <script src="https://cdn.jsdelivr.net/npm/pouchdb@8.0.1/dist/pouchdb.min.js"></script>
+    <!-- Configuração remota -->
+    <script src="../../data/remote_config.js"></script>
+    <!-- Configuração de autenticação -->
+    <script src="../../data/auth_config.js"></script>
+    <!-- Inicialização do sistema -->
+    <script src="../../data/init_system.js"></script>
+    <style>
+        .auth-message {
+            animation: slideDown 0.3s ease-out;
+        }
+        @keyframes slideDown {
+            from { opacity: 0; transform: translateX(-50%) translateY(-20px); }
+            to { opacity: 1; transform: translateX(-50%) translateY(0); }
+        }
+        .field.valid .input-area { border-color: #4CAF50; }
+        .field.valid .input-area input { color: #4CAF50; }
+        input[type="submit"]:disabled { background-color: #cccccc; cursor: not-allowed; }
+        .toggle-mode a:hover { text-decoration: underline !important; }
+    </style>
+</head>
+<body style="background: linear-gradient(135deg, #181828 0%, #23234a 100%); min-height:100vh; display:flex; align-items:center; justify-content:center;">
+  <div class="login-container">
+    <div class="login-card">
+      <div class="login-logo" style="text-align:center;margin-bottom:18px;">
+        <span style="font-size:2.2em;">🎬</span>
+        <h1 style="margin:0;font-size:2em;color:#fff;letter-spacing:1px;">Meteflix</h1>
+        <p style="color:#aaa;margin:0;font-size:1.1em;">Seu streaming pessoal</p>
+      </div>
+      <form id="loginForm" autocomplete="on">
+        <div class="form-group">
+          <label for="loginEmail">Email</label>
+          <input type="email" id="loginEmail" placeholder="Digite seu email" required>
+        </div>
+        <div class="form-group">
+          <label for="loginPassword">Senha</label>
+          <input type="password" id="loginPassword" placeholder="Digite sua senha" required>
+        </div>
+        <button type="submit" class="btn" style="width:100%;margin-top:18px;">Entrar</button>
+        <div id="loginMsg" style="margin-top:16px;"></div>
+      </form>
+      <div style="margin-top:32px;text-align:center;color:#888;font-size:0.95em;">
+        <span>Admin padrão: <b>admin@meteflix.com</b> / <b>admin123</b></span>
+      </div>
+    </div>
+  </div>
+  <style>
+    .login-container { min-width:320px; width:100vw; max-width:420px; padding:24px 0; }
+    .login-card { background:#23234a; border-radius:18px; box-shadow:0 4px 32px #0008; padding:36px 28px 24px 28px; }
+    .form-group { margin-bottom:18px; }
+    .form-group label { color:#ccc; font-size:1em; margin-bottom:6px; display:block; }
+    .form-group input { width:100%; padding:12px; border:none; border-radius:7px; background:#181828; color:#fff; font-size:1em; box-sizing:border-box; }
+    .form-group input:focus { outline:2px solid #667eea; background:#181828; }
+    .btn { background: linear-gradient(45deg, #667eea, #764ba2); color: white; border: none; padding: 12px 25px; border-radius: 25px; cursor: pointer; font-size: 1em; transition: transform 0.2s ease; }
+    .btn:hover { transform: scale(1.04); }
+    @media (max-width:600px) { .login-card { padding:18px 4vw; } }
+  </style>
+  <script src="index.js"></script>
+</body>
+</html> 
