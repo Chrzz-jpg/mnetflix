@@ -1,5 +1,6 @@
 # 🎬 Meteflix - Seu Streaming Pessoal
 
+[![Live Demo](https://img.shields.io/badge/Live%20Demo-Online-brightgreen.svg)](https://chrzz-jpg.github.io/mnetflix/)
 [![PWA Ready](https://img.shields.io/badge/PWA-Ready-brightgreen.svg)](https://web.dev/progressive-web-apps/)
 [![PouchDB](https://img.shields.io/badge/PouchDB-8.0.1-blue.svg)](https://pouchdb.com/)
 [![Offline First](https://img.shields.io/badge/Offline-First-orange.svg)](https://web.dev/offline-first/)
@@ -7,9 +8,19 @@
 
 > Uma plataforma de streaming moderna e responsiva com autenticação, gerenciamento de filmes e funcionalidades PWA
 
+## ⚡ Quick Start
+
+**🎯 Quer ver funcionando agora?**
+- **🌐 [Acesse a versão online](https://chrzz-jpg.github.io/mnetflix/)**
+
+**🔑 Credenciais de Teste:**
+- **👨‍💼 Admin**: `admin@meteflix.com` / `admin123` (acesso completo)
+- **👤 Cliente**: `user@meteflix.com` / `user123` (acesso limitado)
+
 ## 🚀 Demo
 
-Acesse o Meteflix: [Abrir Demo](index.html)
+### 💻 Versão Local
+**Para rodar localmente:** [Abrir Demo](index.html)
 
 **Credenciais de Teste:**
 - **Admin**: `admin@meteflix.com` / `admin123`
@@ -95,6 +106,11 @@ meteflix_manus/
 ```
 
 ## 🚀 Como Usar
+
+### 🌐 Deploy Automático
+A versão live está hospedada no **GitHub Pages** e é atualizada automaticamente a cada push para o repositório.
+
+**URL da versão live:** [https://chrzz-jpg.github.io/mnetflix/](https://chrzz-jpg.github.io/mnetflix/)
 
 ### 1. Clone o Repositório
 ```bash
