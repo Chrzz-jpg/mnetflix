@@ -17,14 +17,6 @@
 - **👨‍💼 Admin**: `admin@meteflix.com` / `admin123` (acesso completo)
 - **👤 Cliente**: `user@meteflix.com` / `user123` (acesso limitado)
 
-## 🚀 Demo
-
-### 💻 Versão Local
-**Para rodar localmente:** [Abrir Demo](index.html)
-
-**Credenciais de Teste:**
-- **Admin**: `admin@meteflix.com` / `admin123`
-- **Cliente**: `user@meteflix.com` / `user123`
 
 ## ✨ Funcionalidades
 
